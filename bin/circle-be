@@ -1,0 +1,74 @@
+#!/usr/bin/perl -w
+
+#  You may distribute under the terms of the GNU General Public License
+#
+#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+
+use strict;
+
+# Until we have a real CPAN dist...
+use lib ".";
+use lib "$ENV{HOME}/src/perl/Net-Async-IRC/lib";
+
+use Tangence::Constants;
+use Tangence::Server;
+use Tangence::Registry;
+
+use Circle::RootObj;
+
+use IO::Async::Loop 0.16;
+
+use Getopt::Long;
+use Socket qw( AF_INET AF_UNIX SOCK_STREAM pack_sockaddr_un );
+
+my $PORT;
+my $SOCKPATH;
+
+GetOptions(
+   'p|port=i'   => \$PORT,
+   's|socket=s' => \$SOCKPATH,
+) or exit(1);
+
+defined $PORT and defined $SOCKPATH and die "Cannot specify both --port and --socket\n";
+
+my $loop = IO::Async::Loop->new();
+
+my $registry = Tangence::Registry->new();
+
+my $rootobj = $registry->construct(
+   "Circle::RootObj",
+   loop => $loop
+);
+$rootobj->id == 1 or die "Assert failed: root object does not have ID 1";
+
+my $server = Tangence::Server->new(
+   loop     => $loop,
+   registry => $registry,
+);
+
+if( defined $PORT ) {
+   $server->listen(
+      family => AF_INET, # So we'll only get one
+      socktype => SOCK_STREAM,
+      service => $PORT,
+
+      on_listen_error  => sub { print STDERR "Cannot listen\n"; },
+      on_resolve_error => sub { print STDERR "Cannot resolve - $_[0]\n"; },
+   );
+}
+elsif( defined $SOCKPATH ) {
+   if( -e $SOCKPATH ) {
+      unlink $SOCKPATH or die "Cannot unlink $SOCKPATH - $!";
+   };
+   $server->listen(
+      addr => [ AF_UNIX, SOCK_STREAM, 0, pack_sockaddr_un( $SOCKPATH ) ],
+
+      on_fail => sub { print STDERR "Cannot $_[0] - $_[-1]\n"; },
+      on_listen_error => sub { print STDERR "Cannot listen\n"; },
+   );
+}
+else {
+   $server->new_conn( read_handle => \*STDIN, write_handle => \*STDOUT );
+}
+
+$loop->loop_forever;

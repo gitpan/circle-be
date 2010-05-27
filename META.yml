@@ -1,0 +1,74 @@
+---
+abstract: 'server backend for the C<Circle> application host'
+author:
+  - 'Paul Evans <leonerd@leonerd.org.uk>'
+configure_requires:
+  Module::Build: 0.36
+generated_by: 'Module::Build version 0.3607'
+license: gpl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: circle-be
+provides:
+  Circle:
+    file: lib/Circle.pm
+    version: 0.01
+  Circle::Collection:
+    file: lib/Circle/Collection.pm
+  Circle::Command:
+    file: lib/Circle/Command.pm
+  Circle::CommandInvocation:
+    file: lib/Circle/CommandInvocation.pm
+  Circle::Commandable:
+    file: lib/Circle/Commandable.pm
+  Circle::Configurable:
+    file: lib/Circle/Configurable.pm
+  Circle::GlobalRules:
+    file: lib/Circle/GlobalRules.pm
+  Circle::Net::IRC:
+    file: lib/Circle/Net/IRC.pm
+  Circle::Net::IRC::Channel:
+    file: lib/Circle/Net/IRC/Channel.pm
+  Circle::Net::IRC::Target:
+    file: lib/Circle/Net/IRC/Target.pm
+  Circle::Net::IRC::User:
+    file: lib/Circle/Net/IRC/User.pm
+  Circle::Net::Raw:
+    file: lib/Circle/Net/Raw.pm
+  Circle::RootObj:
+    file: lib/Circle/RootObj.pm
+  Circle::Rule::Chain:
+    file: lib/Circle/Rule/Chain.pm
+  Circle::Rule::Resultset:
+    file: lib/Circle/Rule/Resultset.pm
+  Circle::Rule::Store:
+    file: lib/Circle/Rule/Store.pm
+  Circle::Ruleable:
+    file: lib/Circle/Ruleable.pm
+  Circle::Session::Tabbed:
+    file: lib/Circle/Session/Tabbed.pm
+  Circle::TaggedString:
+    file: lib/Circle/TaggedString.pm
+  Circle::Widget:
+    file: lib/Circle/Widget.pm
+  Circle::Widget::Box:
+    file: lib/Circle/Widget/Box.pm
+  Circle::Widget::Entry:
+    file: lib/Circle/Widget/Entry.pm
+  Circle::Widget::Label:
+    file: lib/Circle/Widget/Label.pm
+  Circle::Widget::Scroller:
+    file: lib/Circle/Widget/Scroller.pm
+  Circle::WindowItem:
+    file: lib/Circle/WindowItem.pm
+requires:
+  Attribute::Storage: 0.05
+  Data::Dump: 0
+  IO::Async::Loop: 0.16
+  Net::Async::IRC: 0
+  Tangence::Server: 0
+  YAML: 0
+resources:
+  license: http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt
+version: 0.01
