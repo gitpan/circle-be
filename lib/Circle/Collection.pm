@@ -5,6 +5,7 @@
 package Circle::Collection;
 
 use strict;
+use warnings;
 
 use Carp;
 require attributes;
@@ -28,31 +29,42 @@ sub import
    my $storage = $args{storage} or croak "Need a storage type";
 
    # Now parse it down to several fields
-   my @attr_names;
+   my @attrs_all;
+   my @attrs_persisted;
    my %attrs;
 
    for( my $i = 0; $i < @$attrs; $i += 2 ) {
       my $name = $attrs->[$i];
       my $a = $attrs->[$i+1];
 
-      push @attr_names, $name;
+      push @attrs_all, $name;
+      push @attrs_persisted, $name unless $a->{transient};
+
       $attrs{$name} = $a;
    }
 
-   my $keyattr = $attr_names[0];
+   my $keyattr = $attrs_all[0];
 
    my %commands;
    %commands = %{ $args{commands} } if $args{commands};
 
    # Data access code
 
-   my ( $method_list, $method_get, $method_add, $method_del );
+   my ( $method_list, $method_get, $method_set, $method_add, $method_del );
 
    if( ref $storage eq "HASH" ) {
       $method_list = $storage->{list};
       $method_get  = $storage->{get};
+      $method_set  = $storage->{set};
       $method_add  = $storage->{add};
       $method_del  = $storage->{del};
+   }
+   elsif( $storage eq "methods" ) {
+      $method_list = "${name}_list";
+      $method_get  = "${name}_get";
+      $method_set  = "${name}_set";
+      $method_add  = "${name}_add";
+      $method_del  = "${name}_del";
    }
    elsif( $storage eq "array" ) {
       $method_list = _mksub( $caller,
@@ -100,41 +112,45 @@ sub import
 
    # Manipulation commands
 
-   $commands{list} = _mksub( $caller,
-      Command_description => qq("List the $desc2"),
-      Command_subof       => qq('$name'),
-      Command_default     => qq(),
-      sub {
-         my $self = shift;
-         my ( $cinv ) = @_;
+   unless( exists $commands{list} ) {
+      defined $method_list or croak "No list method defined for list subcommand";
 
-         my @items = $self->$method_list;
+      $commands{list} = _mksub( $caller,
+         Command_description => qq("List the $desc2"),
+         Command_subof       => qq('$name'),
+         Command_default     => qq(),
+         sub {
+            my $self = shift;
+            my ( $cinv ) = @_;
 
-         unless( @items ) {
-            $cinv->respond( "No $desc2" );
+            my @items = $self->$method_list;
+
+            unless( @items ) {
+               $cinv->respond( "No $desc2" );
+               return;
+            }
+
+            my @table;
+
+            foreach my $item ( @items ) {
+               my @shown_item;
+               foreach my $attr ( @attrs_all ) {
+                  my $value = $item->{$attr};
+                  push @shown_item, exists $attrs{$attr}{show} ? $attrs{$attr}{show}->( local $_ = $value ) : $value;
+               }
+               push @table, \@shown_item;
+            }
+
+            $cinv->respond_table( \@table, headings => \@attrs_all );
             return;
          }
-
-         my @table;
-
-         foreach my $item ( @items ) {
-            my @shown_item;
-            foreach my $attr ( @attr_names ) {
-               my $value = $item->{$attr};
-               push @shown_item, exists $attrs{$attr}{show} ? $attrs{$attr}{show}->( local $_ = $value ) : $value;
-            }
-            push @table, \@shown_item;
-         }
-
-         $cinv->respond_table( \@table, headings => \@attr_names );
-         return;
-      }
-   ) unless exists $commands{list};
+      );
+   }
 
    my @opts_add;
    my @opts_mod;
 
-   foreach ( @attr_names ) {
+   foreach ( @attrs_persisted ) {
       next if $_ eq $keyattr;
 
       my $desc = $attrs{$_}{desc} || $_;
@@ -147,85 +163,105 @@ sub import
                       qq('no-$_=+', desc => "remove $_") unless $attrs{$_}{nomod};
    }
 
-   $commands{add} = _mksub( $caller,
-      Command_description => qq("Add a $desc1"),
-      Command_subof       => qq('$name'),
-      Command_arg         => qq('$keyattr'),
-      Command_opt         => \@opts_add,
-      sub {
-         my $self = shift;
-         my ( $key, $opts, $cinv ) = @_;
+   unless( exists $commands{add} ) {
+      defined $method_add or croak "No add method defined for add subcommand";
 
-         if( $self->$method_get( $key ) ) {
-            $cinv->responderr( "Already have a $desc1 '$key'" );
+      $commands{add} = _mksub( $caller,
+         Command_description => qq("Add a $desc1"),
+         Command_subof       => qq('$name'),
+         Command_arg         => qq('$keyattr'),
+         Command_opt         => \@opts_add,
+         sub {
+            my $self = shift;
+            my ( $key, $opts, $cinv ) = @_;
+
+            if( $self->$method_get( $key ) ) {
+               $cinv->responderr( "Already have a $desc1 '$key'" );
+               return;
+            }
+
+            my $item = { $keyattr => $key };
+            exists $attrs{$_}{default} and $item->{$_} = $attrs{$_}{default} for @attrs_persisted;
+
+            defined $opts->{$_} and $item->{$_} = $opts->{$_} for @attrs_persisted;
+
+            unless( eval { $self->$method_add( $key, $item ); 1 } ) {
+               my $err = "$@"; chomp $err;
+               $cinv->responderr( "Cannot add $desc1 '$key' - $err" );
+               return;
+            }
+
+            $cinv->respond( "Added $desc1 '$key'" );
             return;
          }
+      );
+   }
 
-         my $item = { $keyattr => $key };
-         exists $attrs{$_}{default} and $item->{$_} = $attrs{$_}{default} for @attr_names;
+   unless( exists $commands{mod} ) {
+      defined $method_get or croak "No get method defined for mod subcommand";
 
-         defined $opts->{$_} and $item->{$_} = $opts->{$_} for @attr_names;
+      $commands{mod} = _mksub( $caller,
+         Command_description => qq("Modify an existing $desc1"),
+         Command_subof       => qq('$name'),
+         Command_arg         => qq('$keyattr'),
+         Command_opt         => \@opts_mod,
+         sub {
+            my $self = shift;
+            my ( $key, $opts, $cinv ) = @_;
 
-         unless( eval { $self->$method_add( $key, $item ); 1 } ) {
-            my $err = "$@"; chomp $err;
-            $cinv->responderr( "Cannot add $desc1 '$key' - $err" );
+            my $item = $self->$method_get( $key );
+
+            unless( $item ) {
+               $cinv->responderr( "No such $desc1 '$key'" );
+               return;
+            }
+
+            my %mod;
+            exists $opts->{$_} and $mod{$_} = $opts->{$_} for @attrs_persisted;
+            exists $opts->{"no-$_"} and $mod{$_} = $attrs{$_}{default} for @attrs_persisted;
+
+            if( $method_set ) {
+               $self->$method_set( $key, \%mod );
+            }
+            else {
+               $item->{$_} = $mod{$_} for keys %mod;
+            }
+
+            $cinv->respond( "Modified $desc1 '$key'" );
             return;
          }
+      );
+   }
 
-         $cinv->respond( "Added $desc1 '$key'" );
-         return;
-      }
-   ) unless exists $commands{add};
+   unless( exists $commands{del} ) {
+      defined $method_del or croak "No del method defined for del subcommand";
 
-   $commands{mod} = _mksub( $caller,
-      Command_description => qq("Modify an existing $desc1"),
-      Command_subof       => qq('$name'),
-      Command_arg         => qq('$keyattr'),
-      Command_opt         => \@opts_mod,
-      sub {
-         my $self = shift;
-         my ( $key, $opts, $cinv ) = @_;
+      $commands{del} = _mksub( $caller,
+         Command_description => qq("Delete a $desc1"),
+         Command_subof       => qq('$name'),
+         Command_arg         => qq('$keyattr'),
+         sub {
+            my $self = shift;
+            my ( $key, $cinv ) = @_;
 
-         my $item = $self->$method_get( $key );
+            my $item = $self->$method_get( $key );
 
-         unless( $item ) {
-            $cinv->responderr( "No such $desc1 '$key'" );
+            unless( $item ) {
+               $cinv->responderr( "No such $desc1 '$key'" );
+               return;
+            }
+
+            unless( eval { $self->$method_del( $key, $item ); 1 } ) {
+               my $err = "$@"; chomp $err;
+               $cinv->responderr( "Cannot delete $desc1 '$key' - $err" );
+               return;
+            }
+
+            $cinv->respond( "Removed $desc1 '$key'" );
             return;
          }
-
-         exists $opts->{$_} and $item->{$_} = $opts->{$_} for @attr_names;
-         exists $opts->{"no-$_"} and $item->{$_} = $attrs{$_}{default} for @attr_names;
-
-         $cinv->respond( "Modified $desc1 '$key'" );
-         return;
-      }
-   ) unless exists $commands{mod};
-
-   $commands{del} = _mksub( $caller,
-      Command_description => qq("Delete a $desc1"),
-      Command_subof       => qq('$name'),
-      Command_arg         => qq('$keyattr'),
-      sub {
-         my $self = shift;
-         my ( $key, $cinv ) = @_;
-
-         my $item = $self->$method_get( $key );
-
-         unless( $item ) {
-            $cinv->responderr( "No such $desc1 '$key'" );
-            return;
-         }
-
-         unless( eval { $self->$method_del( $key, $item ); 1 } ) {
-            my $err = "$@"; chomp $err;
-            $cinv->responderr( "Cannot delete $desc1 '$key' - $err" );
-            return;
-         }
-
-         $cinv->respond( "Removed $desc1 '$key'" );
-         return;
-      }
-   ) unless exists $commands{del};
+      );
+   }
 
    # Now delete present-but-undef ones; these are where the caller vetoed the 
    # above autogeneration
@@ -249,7 +285,7 @@ sub import
 
          foreach my $n ( @{ $ynode->{$name} } ) {
             my $item = {};
-            $item->{$_} = $n->{$_} for @attr_names;
+            $item->{$_} = $n->{$_} for @attrs_persisted;
 
             $self->$method_add( $item->{$keyattr}, $item );
          }
@@ -265,7 +301,7 @@ sub import
 
          foreach my $item ( $self->$method_list ) {
             push @itemconfs, my $n = YAML::Node->new({});
-            defined $item->{$_} and $n->{$_} = $item->{$_} for @attr_names;
+            defined $item->{$_} and $n->{$_} = $item->{$_} for @attrs_persisted;
          }
       }
    );

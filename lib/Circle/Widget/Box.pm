@@ -5,6 +5,7 @@
 package Circle::Widget::Box;
 
 use strict;
+use warnings;
 
 use base qw( Circle::Widget );
 

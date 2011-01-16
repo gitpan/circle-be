@@ -1,0 +1,13 @@
+Revision history for Circle
+
+0.02    CHANGES:
+         * Updated for Tangence 0.03
+         * Added '/kick' command
+         * Persistance of IRC channels in config
+
+        BUGFIXED:
+         * 'use strict; use warnings;' in all files
+         * Declare dependency on String::Tagged
+
+0.01    First version, released on an unsuspecting world.
+

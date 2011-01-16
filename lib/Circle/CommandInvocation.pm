@@ -5,6 +5,7 @@
 package Circle::CommandInvocation;
 
 use strict;
+use warnings;
 
 sub new
 {

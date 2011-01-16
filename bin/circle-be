@@ -5,14 +5,12 @@
 #  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
 
 use strict;
-
-# Until we have a real CPAN dist...
-use lib ".";
-use lib "$ENV{HOME}/src/perl/Net-Async-IRC/lib";
+use warnings;
 
 use Tangence::Constants;
-use Tangence::Server;
 use Tangence::Registry;
+
+use Net::Async::Tangence::Server;
 
 use Circle::RootObj;
 
@@ -41,10 +39,11 @@ my $rootobj = $registry->construct(
 );
 $rootobj->id == 1 or die "Assert failed: root object does not have ID 1";
 
-my $server = Tangence::Server->new(
-   loop     => $loop,
+my $server = Net::Async::Tangence::Server->new(
    registry => $registry,
 );
+
+$loop->add( $server );
 
 if( defined $PORT ) {
    $server->listen(

@@ -1,10 +1,11 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Circle::RootObj;
 
 use strict;
+use warnings;
 use base qw( Tangence::Object Circle::WindowItem Circle::Configurable );
 
 use Tangence::Constants;
@@ -105,6 +106,7 @@ sub add_network
    );
 
    $newnet->subscribe_event( destroy => sub {
+      my ( $newnet ) = @_;
       $self->broadcast_sessions( "delete_item", $newnet );
       $self->del_prop_networks( $name );
    } );
@@ -329,7 +331,20 @@ sub command_eval
       $cinv->responderr( "Died: $err" );
    }
    else {
-      my @lines = split m/\n/, Data::Dump::dump($result);
+      my @lines;
+
+      my $timedout;
+      local $SIG{ALRM} = sub { $timedout = 1; die };
+      eval {
+         alarm(5);
+         @lines = split m/\n/, Data::Dump::dump($result);
+         alarm(0);
+      };
+
+      if( $timedout ) {
+         $cinv->responderr( "Failed - took too long to render results. Try something more specific" );
+         return;
+      }
 
       if( @lines > 20 ) {
          @lines = ( @lines[0..18], "...", $lines[-1] );

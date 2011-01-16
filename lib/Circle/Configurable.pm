@@ -5,6 +5,7 @@
 package Circle::Configurable;
 
 use strict;
+use warnings;
 
 use base qw( Circle::Commandable );
 

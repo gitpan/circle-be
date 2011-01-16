@@ -5,6 +5,7 @@
 package Circle::Command;
 
 use strict;
+use warnings;
 
 use Attribute::Storage qw( get_subattrs get_subattr );
 

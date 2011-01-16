@@ -5,6 +5,7 @@
 package Circle::Net::IRC::Target;
 
 use strict;
+use warnings;
 use base qw( Tangence::Object Circle::WindowItem );
 
 use Tangence::Constants;

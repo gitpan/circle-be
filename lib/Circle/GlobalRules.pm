@@ -5,6 +5,7 @@
 package Circle::GlobalRules;
 
 use strict;
+use warnings;
 
 use Text::Balanced qw( extract_delimited );
 

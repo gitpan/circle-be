@@ -1,10 +1,11 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Circle::Net::Raw;
 
 use strict;
+use warnings;
 
 use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable Circle::Configurable );
 
@@ -334,7 +335,7 @@ sub get_widget_statusbar
    );
    $self->watch_property( "connected", 
       on_updated => sub {
-         my ( $connected ) = @_;
+         my ( $self, $connected ) = @_;
          $connected ? $serverlabel->set_prop_text( $self->{host} . ":" . $self->{port} )
                     : $serverlabel->set_prop_text( "--unconnected--" );
       }

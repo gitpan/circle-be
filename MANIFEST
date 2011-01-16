@@ -1,6 +1,7 @@
 bin/circle-be
 bin/circle-fe-cmd
 Build.PL
+Changes
 lib/Circle.pm
 lib/Circle/Collection.pm
 lib/Circle/Command.pm
@@ -26,8 +27,9 @@ lib/Circle/Widget/Entry.pm
 lib/Circle/Widget/Label.pm
 lib/Circle/Widget/Scroller.pm
 lib/Circle/WindowItem.pm
-LICENSE
-Makefile.PL
 MANIFEST			This list of files
-META.yml
+t/00use.t
+Makefile.PL
 README
+LICENSE
+META.yml

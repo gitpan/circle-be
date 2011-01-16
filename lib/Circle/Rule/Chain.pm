@@ -5,6 +5,7 @@
 package Circle::Rule::Chain;
 
 use strict;
+use warnings;
 
 use Circle::Rule::Resultset;
 

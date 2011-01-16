@@ -5,6 +5,8 @@
 package Circle::Rule::Store;
 
 use strict;
+use warnings;
+
 use Carp;
 
 use Circle::Rule::Chain;

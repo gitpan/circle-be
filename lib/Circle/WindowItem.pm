@@ -10,6 +10,7 @@ package Circle::WindowItem;
 #   responding to typed lines of text
 
 use strict;
+use warnings;
 
 use Carp;
 

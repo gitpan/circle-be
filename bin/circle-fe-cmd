@@ -5,6 +5,7 @@
 #  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
 
 use strict;
+use warnings;
 
 # Until we have a real CPAN dist...
 use lib ".";

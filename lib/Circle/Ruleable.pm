@@ -7,6 +7,7 @@ package Circle::Ruleable;
 use base qw( Circle::Commandable );
 
 use strict;
+use warnings;
 
 sub init_rulestore
 {

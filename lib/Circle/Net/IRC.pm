@@ -1,10 +1,11 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC;
 
 use strict;
+use warnings;
 
 use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable Circle::Configurable );
 
@@ -165,6 +166,7 @@ sub get_channel_or_create
 
    $self->{channels}->{$channame_folded} = $chanobj;
    $chanobj->subscribe_event( destroy => sub {
+      my ( $chanobj ) = @_;
       $root->broadcast_sessions( "delete_item", $chanobj );
       $self->del_prop_channels( $chanobj );
       delete $self->{channels}->{$channame_folded};
@@ -191,6 +193,11 @@ sub get_user_or_create
    my $self = shift;
    my ( $nick ) = @_;
 
+   unless( defined $nick and length $nick ) {
+      warn "Unable to create a new user with an empty nick\n";
+      return undef;
+   }
+
    my $irc = $self->{irc};
    my $nick_folded = $irc->casefold_name( $nick );
 
@@ -209,6 +216,7 @@ sub get_user_or_create
    $self->{users}->{$nick_folded} = $userobj;
 
    $userobj->subscribe_event( destroy => sub {
+      my ( $userobj ) = @_;
       $root->broadcast_sessions( "delete_item", $userobj );
       $self->del_prop_users( $userobj );
       my $nick_folded = $irc->casefold_name( $userobj->get_prop_name );
@@ -216,7 +224,7 @@ sub get_user_or_create
    } );
 
    $userobj->subscribe_event( change_nick => sub {
-      my ( undef, undef, $oldnick, $oldnick_folded, $newnick, $newnick_folded ) = @_;
+      my ( undef, $oldnick, $oldnick_folded, $newnick, $newnick_folded ) = @_;
       $self->{users}->{$newnick_folded} = delete $self->{users}->{$oldnick_folded};
    } );
 
@@ -1005,33 +1013,67 @@ sub command_unaway
    return;
 }
 
-sub command_channels
-   : Command_description("Display or manipulate channels")
-{
-}
+use Circle::Collection
+   name => 'channels',
+   storage => 'methods',
+   attrs => [
+      name     => { desc => "name" },
+      joined   => { desc      => "currently JOINed?",
+                    transient => 1,
+                    show      => sub { $_ ? "yes" : "no" },
+                  },
+      autojoin => { desc => "JOIN automatically when connected",
+                    show => sub { $_ ? "yes" : "no" },
+                  },
+   ],
+   ;
 
-sub command_channels_list
-   : Command_description("List the channels")
-   : Command_subof('channels')
-   : Command_default()
+sub channels_list
 {
    my $self = shift;
-   my ( $cinv ) = @_;
+   return map { $self->channels_get( $_ ) } sort keys %{ $self->{channels} };
+}
 
-   my $channels = $self->{channels};
+sub channels_get
+{
+   my $self = shift;
+   my ( $name ) = @_;
 
-   my @table;
+   my $chan = $self->get_channel_if_exists( $name ) or return undef;
 
-   foreach my $channame ( sort keys %$channels ) {
-      my $chan = $channels->{$channame};
-      push @table, [
-         $chan->get_prop_name,
-         $chan->{state} == Circle::Net::IRC::Channel::STATE_JOINED ? "yes" : "no",
-      ];
-   }
+   return {
+      name     => $chan->get_prop_name,
+      joined   => $chan->{state} == Circle::Net::IRC::Channel::STATE_JOINED,
+      autojoin => $chan->{autojoin},
+   };
+}
 
-   $cinv->respond_table( \@table, headings => [qw( name joined )] );
-   return;
+sub channels_set
+{
+   my $self = shift;
+   my ( $name, $def ) = @_;
+
+   my $chanobj = $self->get_channel_if_exists( $name ) or die "Missing channel $name for channels_set";
+
+   $chanobj->{autojoin} = $def->{autojoin} if exists $def->{autojoin};
+}
+
+sub channels_add
+{
+   my $self = shift;
+   my ( $name, $def ) = @_;
+
+   my $chanobj = $self->get_channel_or_create( $name );
+
+   $chanobj->reify;
+
+   $chanobj->{autojoin} = $def->{autojoin};
+}
+
+sub channels_del
+{
+   my $self = shift;
+   die "TODO: delete channel @_\n";
 }
 
 sub commandable_parent
@@ -1050,6 +1092,18 @@ sub enumerate_items
    $all{$_}->get_prop_real or delete $all{$_} for keys %all;
 
    return \%all;
+}
+
+sub get_item
+{
+   my $self = shift;
+   my ( $name ) = @_;
+
+   foreach my $items ( $self->{channels}, $self->{users} ) {
+      return $items->{$name} if exists $items->{$name} and $items->{$name}->get_prop_real;
+   }
+
+   return undef;
 }
 
 sub setting_nick
@@ -1072,6 +1126,8 @@ sub load_configuration
 
    $self->load_servers_configuration( $ynode );
 
+   $self->load_channels_configuration( $ynode );
+
    $self->load_rules_configuration( $ynode );
 }
 
@@ -1083,6 +1139,8 @@ sub store_configuration
    $self->store_settings( $ynode, qw( nick ) );
 
    $self->store_servers_configuration( $ynode );
+
+   $self->store_channels_configuration( $ynode );
 
    $self->store_rules_configuration( $ynode );
 }
@@ -1105,14 +1163,18 @@ sub get_widget_statusbar
    my $nicklabel = $registry->construct(
       "Circle::Widget::Label",
    );
-   $self->watch_property( "nick", on_updated => sub { $nicklabel->set_prop_text( $_[0] ) } );
+   $self->watch_property( "nick",
+      on_updated => sub { $nicklabel->set_prop_text( $_[1] ) }
+   );
 
    $statusbar->add( $nicklabel );
 
    my $awaylabel = $registry->construct(
       "Circle::Widget::Label",
    );
-   $self->watch_property( "away", on_updated => sub { $awaylabel->set_prop_text( $_[0] ? "[AWAY]" : "" ) } );
+   $self->watch_property( "away",
+      on_updated => sub { $awaylabel->set_prop_text( $_[1] ? "[AWAY]" : "" ) }
+   );
 
    $statusbar->add( $awaylabel );
 

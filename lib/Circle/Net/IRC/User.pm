@@ -5,6 +5,7 @@
 package Circle::Net::IRC::User;
 
 use strict;
+use warnings;
 use base qw( Circle::Net::IRC::Target );
 
 use Carp;

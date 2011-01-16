@@ -5,6 +5,7 @@
 package Circle::TaggedString;
 
 use strict;
+use warnings;
 
 use base qw( String::Tagged );
 

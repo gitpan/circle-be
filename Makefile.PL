@@ -9,7 +9,9 @@ WriteMakefile
                            'Data::Dump' => 0,
                            'IO::Async::Loop' => '0.16',
                            'Net::Async::IRC' => 0,
-                           'Tangence::Server' => 0,
+                           'Net::Async::Tangence::Server' => 0,
+                           'String::Tagged' => 0,
+                           'Tangence::Object' => '0.03',
                            'YAML' => 0
                          },
           'INSTALLDIRS' => 'site',

@@ -5,6 +5,7 @@
 package Circle::Commandable;
 
 use strict;
+use warnings;
 
 use Carp;
 

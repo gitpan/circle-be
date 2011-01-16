@@ -5,6 +5,8 @@
 package Circle::Rule::Resultset;
 
 use strict;
+use warnings;
+
 use Carp;
 
 sub new

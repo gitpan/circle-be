@@ -1,10 +1,11 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::Channel;
 
 use strict;
+use warnings;
 use base qw( Circle::Net::IRC::Target );
 
 use Carp;
@@ -108,7 +109,7 @@ sub on_connected
    my $self = shift;
    $self->SUPER::on_connected;
 
-   if( $self->{rejoin_on_connect} ) {
+   if( $self->{autojoin} || $self->{rejoin_on_connect} ) {
       $self->join(
          on_joined => sub { undef $self->{rejoin_on_connect} }
          # TODO: something about errors
@@ -144,6 +145,15 @@ sub join
 
    $self->{on_joined} = $on_joined;
    $self->{on_join_error} = $args{on_join_error};
+}
+
+sub kick
+{
+   my $self = shift;
+   my ( $nick, $message ) = @_;
+
+   my $irc = $self->{irc};
+   $irc->send_message( "KICK", undef, $self->get_prop_name, $nick, $message );
 }
 
 sub mode
@@ -763,6 +773,21 @@ sub command_devoice
    return;
 }
 
+sub command_kick
+   : Command_description("Kick a user from the channel")
+   : Command_arg('user')
+   : Command_arg('message?', eatall => 1 )
+{
+   my $self = shift;
+   my ( $nick, $message ) = @_;
+
+   $message = "" if !defined $message;
+
+   $self->kick( $nick, $message );
+
+   return;
+}
+
 ### 
 # Widget tree
 ###
@@ -782,7 +807,9 @@ sub make_widget
       "Circle::Widget::Entry",
       on_enter => sub { $self->method_topic( $_[0] ) },
    );
-   $self->watch_property( "topic", on_updated => sub { $topicentry->set_prop_text( $_[0] ) } );
+   $self->watch_property( "topic",
+      on_updated => sub { $topicentry->set_prop_text( $_[1] ) }
+   );
 
    $box->add( $topicentry );
 
@@ -802,8 +829,12 @@ sub make_widget
    my $nick = $net->get_prop_nick;
    my $my_flag = "";
    my $updatenicklabel = sub { $nicklabel->set_prop_text( $my_flag . $nick ) };
-   $net->watch_property( "nick", on_set => sub { $nick = $_[0]; goto &$updatenicklabel } );
-   $self->watch_property( "my_flag", on_set => sub { $my_flag = $_[0]; goto &$updatenicklabel } );
+   $net->watch_property( "nick",
+      on_set => sub { $nick = $_[1]; goto &$updatenicklabel }
+   );
+   $self->watch_property( "my_flag",
+      on_set => sub { $my_flag = $_[1]; goto &$updatenicklabel }
+   );
    $updatenicklabel->();
 
    $statusbox->add( $nicklabel );
@@ -811,7 +842,9 @@ sub make_widget
    my $modestrlabel = $registry->construct(
       "Circle::Widget::Label",
    );
-   $self->watch_property( "modestr", on_updated => sub { $modestrlabel->set_prop_text( $_[0] ) } );
+   $self->watch_property( "modestr",
+      on_updated => sub { $modestrlabel->set_prop_text( $_[1] ) }
+   );
 
    $statusbox->add( $modestrlabel );
 
@@ -820,9 +853,9 @@ sub make_widget
    my $countlabel = $registry->construct(
       "Circle::Widget::Label",
    );
-   $self->watch_property( "occupant_summary", on_updated => 
-      sub {
-         my ( $summary ) = @_;
+   $self->watch_property( "occupant_summary",
+      on_updated => sub {
+         my ( $self, $summary ) = @_;
 
          my $irc = $self->{irc};
          my $PREFIX_FLAGS = $irc->isupport( "PREFIX_FLAGS" );

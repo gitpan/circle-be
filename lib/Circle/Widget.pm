@@ -5,6 +5,7 @@
 package Circle::Widget;
 
 use strict;
+use warnings;
 
 use base qw( Tangence::Object );
 use Tangence::Constants;
