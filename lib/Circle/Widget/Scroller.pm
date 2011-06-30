@@ -9,15 +9,6 @@ use warnings;
 
 use base qw( Circle::Widget );
 
-use Tangence::Constants;
-
-our %PROPS = (
-   displayevents => {
-      dim  => DIM_QUEUE,
-      type => 'list(any)',
-   },
-);
-
 sub new
 {
    my $class = shift;

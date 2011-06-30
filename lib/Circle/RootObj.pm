@@ -8,8 +8,6 @@ use strict;
 use warnings;
 use base qw( Tangence::Object Circle::WindowItem Circle::Configurable );
 
-use Tangence::Constants;
-
 use Carp;
 use YAML (); # 'Dump' and 'Load' are a bit generic; we'll call by FQN
 
@@ -32,26 +30,6 @@ use Module::Pluggable sub_name    => "net_types",
 use Data::Dump;
 
 use constant CIRCLERC => "$ENV{HOME}/.circlerc";
-
-our %METHODS = (
-   get_session => {
-      args => [qw( list(str) )],
-      ret  => 'obj',
-   },
-);
-
-our %EVENTS = (
-   network_added => {
-      args  => [qw( obj )],
-   },
-);
-
-our %PROPS = (
-   networks => {
-      dim  => DIM_HASH,
-      type => 'obj',
-   },
-);
 
 sub _nettype2class
 {
@@ -159,28 +137,39 @@ use Circle::Collection
 
 our %sessions;
 
+sub add_session
+{
+   my $self = shift;
+   my ( $identity, $type ) = @_;
+
+   eval "require $type";
+   die $@ if $@;
+
+   my $registry = $self->{registry};
+
+   my $session = $registry->construct(
+      $type,
+      root => $self,
+      identity => $identity,
+   );
+
+   return $sessions{$identity} = $session;
+}
+
 sub method_get_session
 {
    my $self = shift;
    my ( $ctx, $opts ) = @_;
 
-   my $identity = $ctx->connection->identity;
+   my $identity = $ctx->stream->identity;
 
-   return $sessions{$identity} ||= do {
-      my $type = _session_type( $opts );
+   return $sessions{$identity} if exists $sessions{$identity};
+   
+   my $type = _session_type( $opts );
 
-      defined $type or die "Cannot identify a session type\n";
+   defined $type or die "Cannot identify a session type\n";
 
-      eval "require $type";
-      die $@ if $@;
-
-      my $registry = $self->{registry};
-      $registry->construct(
-         $type,
-         root => $self,
-         identity => $identity,
-      );
-   };
+   return $self->add_session( $identity, $type );
 }
 
 sub broadcast_sessions
@@ -252,7 +241,7 @@ sub command_session_info
    my $self = shift;
    my ( $cinv ) = @_;
 
-   my $identity = $cinv->connection->identity;
+   my $identity = $cinv->stream->identity;
    my $session = defined $identity ? $sessions{$identity} : undef;
 
    unless( defined $session ) {
@@ -424,7 +413,18 @@ sub commandable_parent
 sub enumerate_items
 {
    my $self = shift;
-   return $self->get_prop_networks;
+   my $networks = $self->get_prop_networks;
+   return { map { $_->enumerable_name => $_ } values %$networks };
+}
+
+sub enumerable_name
+{
+   return "";
+}
+
+sub enumerable_parent
+{
+   return undef;
 }
 
 sub command_delay
@@ -529,6 +529,16 @@ sub load_configuration
          $net->load_configuration( $netnode );
       }
    }
+
+   if( my $sessions_ynode = $ynode->{sessions} ) {
+      foreach my $sessionname ( keys %$sessions_ynode ) {
+         my $sessionnode = $sessions_ynode->{$sessionname};
+         my $type = $sessionnode->{type};
+
+         my $session = $self->add_session( $sessionname, "Circle::Session::$type" );
+         $session->load_configuration( $sessionnode );
+      }
+   }
 }
 
 sub store_configuration
@@ -537,7 +547,6 @@ sub store_configuration
    my ( $ynode ) = @_;
 
    my $networks_ynode = $ynode->{networks} ||= YAML::Node->new({});
-
    %$networks_ynode = ();
 
    my $networks = $self->get_prop_networks;
@@ -551,6 +560,22 @@ sub store_configuration
          # Ensure it's first
          unshift @{ tied(%$netnode)->keys }, 'type'; # I am going to hell for this
          $netnode->{type} = (ref $net)->NETTYPE;
+      }
+   }
+
+   my $sessions_ynode = $ynode->{sessions} ||= YAML::Node->new({});
+   %$sessions_ynode = ();
+
+   foreach my $identity ( keys %sessions ) {
+      my $session = $sessions{$identity};
+
+      my $sessionnode = $session->get_configuration;
+      $sessions_ynode->{$identity} = $sessionnode;
+
+      unless( $sessionnode->{type} ) { # exists doesn't quite play ball
+         # Ensure it's first
+         unshift @{ tied(%$sessionnode)->keys }, 'type'; # I am going to hell for this
+         ( $sessionnode->{type} ) = (ref $session) =~ m/^Circle::Session::(.*)$/;
       }
    }
 }

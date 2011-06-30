@@ -10,14 +10,6 @@ use base qw( Circle::Net::IRC::Target );
 
 use Carp;
 
-use Tangence::Constants;
-
-our %EVENTS = (
-   change_nick => {
-      args => [qw( str str str str )],
-   },
-);
-
 # Don't reprint RPL_USERISAWAY message within 1 hour
 # TODO: Some sort of config setting system
 my $awaytime_print = 3600;

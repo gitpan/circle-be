@@ -1,0 +1,139 @@
+{
+   "abstract" : "server backend for the C<Circle> application host",
+   "author" : [
+      "Paul Evans <leonerd@leonerd.org.uk>"
+   ],
+   "dynamic_config" : 1,
+   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.110930",
+   "license" : [
+      "open_source"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "circle-be",
+   "prereqs" : {
+      "runtime" : {
+         "requires" : {
+            "Attribute::Storage" : "0.05",
+            "Data::Dump" : 0,
+            "IO::Async::Loop" : "0.16",
+            "Net::Async::IRC" : "0.04",
+            "Net::Async::Tangence::Server" : 0,
+            "String::Tagged" : 0,
+            "Tangence::Object" : "0.06",
+            "YAML" : 0
+         }
+      }
+   },
+   "provides" : {
+      "Circle" : {
+         "file" : "lib/Circle.pm",
+         "version" : "0.03"
+      },
+      "Circle::Collection" : {
+         "file" : "lib/Circle/Collection.pm",
+         "version" : 0
+      },
+      "Circle::Command" : {
+         "file" : "lib/Circle/Command.pm",
+         "version" : 0
+      },
+      "Circle::CommandInvocation" : {
+         "file" : "lib/Circle/CommandInvocation.pm",
+         "version" : 0
+      },
+      "Circle::Commandable" : {
+         "file" : "lib/Circle/Commandable.pm",
+         "version" : 0
+      },
+      "Circle::Configurable" : {
+         "file" : "lib/Circle/Configurable.pm",
+         "version" : 0
+      },
+      "Circle::GlobalRules" : {
+         "file" : "lib/Circle/GlobalRules.pm",
+         "version" : 0
+      },
+      "Circle::Net::IRC" : {
+         "file" : "lib/Circle/Net/IRC.pm",
+         "version" : 0
+      },
+      "Circle::Net::IRC::Channel" : {
+         "file" : "lib/Circle/Net/IRC/Channel.pm",
+         "version" : 0
+      },
+      "Circle::Net::IRC::Target" : {
+         "file" : "lib/Circle/Net/IRC/Target.pm",
+         "version" : 0
+      },
+      "Circle::Net::IRC::User" : {
+         "file" : "lib/Circle/Net/IRC/User.pm",
+         "version" : 0
+      },
+      "Circle::Net::Raw" : {
+         "file" : "lib/Circle/Net/Raw.pm",
+         "version" : 0
+      },
+      "Circle::RootObj" : {
+         "file" : "lib/Circle/RootObj.pm",
+         "version" : 0
+      },
+      "Circle::Rule::Chain" : {
+         "file" : "lib/Circle/Rule/Chain.pm",
+         "version" : 0
+      },
+      "Circle::Rule::Resultset" : {
+         "file" : "lib/Circle/Rule/Resultset.pm",
+         "version" : 0
+      },
+      "Circle::Rule::Store" : {
+         "file" : "lib/Circle/Rule/Store.pm",
+         "version" : 0
+      },
+      "Circle::Ruleable" : {
+         "file" : "lib/Circle/Ruleable.pm",
+         "version" : 0
+      },
+      "Circle::Session::Tabbed" : {
+         "file" : "lib/Circle/Session/Tabbed.pm",
+         "version" : 0
+      },
+      "Circle::TaggedString" : {
+         "file" : "lib/Circle/TaggedString.pm",
+         "version" : 0
+      },
+      "Circle::Widget" : {
+         "file" : "lib/Circle/Widget.pm",
+         "version" : 0
+      },
+      "Circle::Widget::Box" : {
+         "file" : "lib/Circle/Widget/Box.pm",
+         "version" : 0
+      },
+      "Circle::Widget::Entry" : {
+         "file" : "lib/Circle/Widget/Entry.pm",
+         "version" : 0
+      },
+      "Circle::Widget::Label" : {
+         "file" : "lib/Circle/Widget/Label.pm",
+         "version" : 0
+      },
+      "Circle::Widget::Scroller" : {
+         "file" : "lib/Circle/Widget/Scroller.pm",
+         "version" : 0
+      },
+      "Circle::WindowItem" : {
+         "file" : "lib/Circle/WindowItem.pm",
+         "version" : 0
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "license" : [
+         "http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt"
+      ]
+   },
+   "version" : "0.03"
+}

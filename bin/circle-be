@@ -7,7 +7,6 @@
 use strict;
 use warnings;
 
-use Tangence::Constants;
 use Tangence::Registry;
 
 use Net::Async::Tangence::Server;
@@ -31,7 +30,9 @@ defined $PORT and defined $SOCKPATH and die "Cannot specify both --port and --so
 
 my $loop = IO::Async::Loop->new();
 
-my $registry = Tangence::Registry->new();
+my $registry = Tangence::Registry->new(
+   tanfile => "circle.tan",
+);
 
 my $rootobj = $registry->construct(
    "Circle::RootObj",

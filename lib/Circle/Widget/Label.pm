@@ -9,13 +9,4 @@ use warnings;
 
 use base qw( Circle::Widget );
 
-use Tangence::Constants;
-
-our %PROPS = (
-   text => {
-      dim  => DIM_SCALAR,
-      type => 'str',
-   },
-);
-
 1;

@@ -340,7 +340,7 @@ sub get_widget_commandentry
          if( $text =~ m{^/} ) {
             substr( $text, 0, 1 ) = "";
 
-            my $cinv = Circle::CommandInvocation->new( $text, $ctx->connection, $self );
+            my $cinv = Circle::CommandInvocation->new( $text, $ctx->stream, $self );
 
             my $cmd = $cinv->pull_token or 
                return $cinv->responderr( "No command given" );

@@ -11,21 +11,6 @@ use base qw( Circle::Widget );
 
 use Carp;
 
-use Tangence::Constants;
-
-our %PROPS = (
-   orientation => {
-      dim   => DIM_SCALAR,
-      type  => 'str', # enum?
-      smash => 1,
-   },
-   children => {
-      dim   => DIM_ARRAY,
-      type  => 'hash(any)',
-      smash => 1,
-   },
-);
-
 sub new
 {
    my $class = shift;

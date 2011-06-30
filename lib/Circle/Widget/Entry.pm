@@ -9,32 +9,6 @@ use warnings;
 
 use base qw( Circle::Widget );
 
-use Tangence::Constants;
-
-our %METHODS = (
-   enter => {
-      args => [qw( str )],
-      ret  => '',
-   },
-);
-
-our %PROPS = (
-   autoclear => {
-      dim  => DIM_SCALAR,
-      type => 'bool',
-      smash => 1,
-   },
-   text => {
-      dim  => DIM_SCALAR,
-      type => 'str',
-   },
-
-   history => {
-      dim  => DIM_QUEUE,
-      type => 'str',
-   },
-);
-
 sub new
 {
    my $class = shift;

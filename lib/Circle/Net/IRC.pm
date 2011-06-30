@@ -23,49 +23,9 @@ use Circle::Rule::Store;
 use Circle::Widget::Box;
 use Circle::Widget::Label;
 
-use Tangence::Constants;
-
 use Net::Async::IRC;
 
 use Text::Balanced qw( extract_delimited );
-
-our %METHODS = (
-   get_isupport => {
-      args => [qw( str )],
-      ret  => 'any',
-   },
-);
-
-our %EVENTS = (
-   connected => {
-      args => [],
-   },
-   disconnected => {
-      args => [],
-   },
-);
-
-our %PROPS = (
-   nick => {
-      dim  => DIM_SCALAR,
-      type => 'str',
-   },
-
-   away => {
-      dim  => DIM_SCALAR,
-      type => 'bool',
-   },
-
-   channels => {
-      dim  => DIM_OBJSET,
-      type => 'obj',
-   },
-
-   users => {
-      dim  => DIM_OBJSET,
-      type => 'obj',
-   },
-);
 
 sub new
 {
@@ -246,6 +206,25 @@ sub get_target_if_exists
    }
    elsif( $type eq "user" ) {
       return $self->get_user_if_exists( $name );
+   }
+   else {
+      return undef;
+   }
+}
+
+sub get_target_or_create
+{
+   my $self = shift;
+   my ( $name ) = @_;
+
+   my $irc = $self->{irc};
+   my $type = $irc->classify_name( $name );
+
+   if( $type eq "channel" ) {
+      return $self->get_channel_or_create( $name );
+   }
+   elsif( $type eq "user" ) {
+      return $self->get_user_or_create( $name );
    }
    else {
       return undef;
@@ -1082,6 +1061,18 @@ sub commandable_parent
    return $self->{root};
 }
 
+sub enumerable_name
+{
+   my $self = shift;
+   return $self->get_prop_tag;
+}
+
+sub enumerable_parent
+{
+   my $self = shift;
+   return $self->{root};
+}
+
 sub enumerate_items
 {
    my $self = shift;
@@ -1091,17 +1082,19 @@ sub enumerate_items
    # Filter only the real ones
    $all{$_}->get_prop_real or delete $all{$_} for keys %all;
 
-   return \%all;
+   return { map { $_->enumerable_name => $_ } values %all };
 }
 
 sub get_item
 {
    my $self = shift;
-   my ( $name ) = @_;
+   my ( $name, $create ) = @_;
 
    foreach my $items ( $self->{channels}, $self->{users} ) {
       return $items->{$name} if exists $items->{$name} and $items->{$name}->get_prop_real;
    }
+
+   return $self->get_target_or_create( $name ) if $create;
 
    return undef;
 }

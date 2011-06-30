@@ -1,21 +1,12 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Circle::Session::Tabbed;
 
 use strict;
-use base qw( Tangence::Object Circle::Commandable );
+use base qw( Tangence::Object Circle::Commandable Circle::Configurable );
 use Carp;
-
-use Tangence::Constants;
-
-our %PROPS = (
-   tabs => {
-      dim  => DIM_ARRAY,
-      type => 'obj',
-   },
-);
 
 sub _session_type
 {
@@ -143,7 +134,7 @@ sub clonefrom
 sub _get_item
 {
    my $self = shift;
-   my ( $path, $curitem ) = @_;
+   my ( $path, $curitem, $create ) = @_;
 
    $curitem or $path =~ m{^/} or croak "Cannot walk a relative path without a start item";
 
@@ -154,7 +145,7 @@ sub _get_item
 
       my $nextitem;
       if( $curitem->can( "get_item" ) ) {
-         $nextitem = $curitem->get_item( $_ );
+         $nextitem = $curitem->get_item( $_, $create );
       }
       elsif( $curitem->can( "enumerate_items" ) ) {
          $nextitem = $curitem->enumerate_items->{$_};
@@ -178,6 +169,35 @@ sub _cat_path
    return $q if $p eq "";
    return "/$q" if $p eq "/";
    return "$p/$q";
+}
+
+sub load_configuration
+{
+   my $self = shift;
+   my ( $ynode ) = @_;
+
+   $self->set_prop_tabs( [] );
+
+   foreach my $tab ( @{ $ynode->{tabs} } ) {
+      my $item = $self->_get_item( $tab, $self->{root}, 1 );
+      $self->push_prop_tabs( $item );
+   }
+}
+
+sub store_configuration
+{
+   my $self = shift;
+   my ( $ynode ) = @_;
+
+   $ynode->{tabs} = [ map {
+      my $item = $_;
+      my @components;
+      while( $item ) {
+         unshift @components, $item->enumerable_name;
+         $item = $item->enumerable_parent;
+      }
+      join "/", @components;
+   } $self->items ];
 }
 
 sub command_list

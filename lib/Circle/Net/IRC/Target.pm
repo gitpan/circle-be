@@ -1,60 +1,12 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::Target;
 
 use strict;
 use warnings;
 use base qw( Tangence::Object Circle::WindowItem );
-
-use Tangence::Constants;
-
-our %METHODS = (
-   msg => {
-      args => [qw( str )],
-      ret  => '',
-   },
-   notice => {
-      args => [qw( str )],
-      ret  => '',
-   },
-   act => {
-      args => [qw( str )],
-      ret  => '',
-   },
-);
-
-our %EVENTS = (
-   msg => {
-      args => [qw( str str )],
-   },
-   notice => {
-      args => [qw( str str )],
-   },
-   act => {
-      args => [qw( str str )],
-   }
-);
-
-our %PROPS = (
-   name => {
-      dim   => DIM_SCALAR,
-      type  => 'str',
-      smash => 1,
-   },
-
-   network => {
-      dim   => DIM_SCALAR,
-      type  => 'obj',
-      smash => 1,
-   },
-
-   real => {
-      dim   => DIM_SCALAR,
-      type  => 'bool',
-   },
-);
 
 sub new
 {
@@ -314,6 +266,18 @@ sub command_me
 }
 
 sub commandable_parent
+{
+   my $self = shift;
+   return $self->{net};
+}
+
+sub enumerable_name
+{
+   my $self = shift;
+   return $self->get_prop_tag;
+}
+
+sub enumerable_parent
 {
    my $self = shift;
    return $self->{net};

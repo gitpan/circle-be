@@ -14,40 +14,12 @@ use warnings;
 
 use Carp;
 
-use Tangence::Constants;
-
 use base qw( Circle::Commandable );
 
 use Circle::TaggedString;
 
 use Circle::Widget::Box;
 use Circle::Widget::Scroller;
-
-our %METHODS = (
-   reset_level => {
-      args => [],
-      ret  => '',
-   },
-
-   get_widget => {
-      args => [],
-      ret  => 'obj',
-   },
-);
-
-our %PROPS = (
-   tag => {
-      dim   => DIM_SCALAR,
-      type  => 'str',
-      smash => 1,
-   },
-
-   level => {
-      dim   => DIM_SCALAR,
-      type  => 'int',
-      smash => 1,
-   },
-);
 
 sub init_prop_level
 {

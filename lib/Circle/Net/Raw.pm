@@ -11,8 +11,6 @@ use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable Circle::Config
 
 use constant NETTYPE => 'raw';
 
-use Tangence::Constants;
-
 use base qw( Circle::Rule::Store ); # for the attributes
 
 use Text::Balanced qw( extract_delimited );
@@ -21,22 +19,6 @@ use Circle::TaggedString;
 
 use Circle::Widget::Box;
 use Circle::Widget::Label;
-
-our %EVENTS = (
-   connected => {
-      args => [],
-   },
-   disconnected => {
-      args => [],
-   },
-);
-
-our %PROPS = (
-   connected => {
-      dim  => DIM_SCALAR,
-      type => 'bool',
-   },
-);
 
 sub new
 {
@@ -255,6 +237,18 @@ sub incoming_text
 }
 
 sub commandable_parent
+{
+   my $self = shift;
+   return $self->{root};
+}
+
+sub enumerable_name
+{
+   my $self = shift;
+   return $self->get_prop_tag;
+}
+
+sub enumerable_parent
 {
    my $self = shift;
    return $self->{root};

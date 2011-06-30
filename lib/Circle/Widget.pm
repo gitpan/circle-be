@@ -8,15 +8,6 @@ use strict;
 use warnings;
 
 use base qw( Tangence::Object );
-use Tangence::Constants;
-
-our %PROPS = (
-   focussed => {
-      dim  => DIM_SCALAR,
-      type => 'bool',
-      smash => 1,
-   },
-);
 
 sub new
 {

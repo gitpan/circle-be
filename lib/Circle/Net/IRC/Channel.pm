@@ -10,8 +10,6 @@ use base qw( Circle::Net::IRC::Target );
 
 use Carp;
 
-use Tangence::Constants;
-
 use Circle::TaggedString;
 
 use Circle::Widget::Box;
@@ -22,72 +20,6 @@ use constant STATE_UNJOINED => 0;
 use constant STATE_JOINING  => 1;
 use constant STATE_JOINED   => 2;
 use constant STATE_PARTING  => 3;
-
-our %METHODS = (
-   mode => {
-      args => [qw( str list(str) )],
-      ret  => '',
-   },
-   topic => {
-      args => [qw( str )],
-      ret  => '',
-   },
-);
-
-our %EVENTS = (
-   self_joined => {
-      args => [],
-   },
-   self_parted => {
-      args => [],
-   },
-
-   'join' => {
-      args => [qw( str )],
-   },
-   part => {
-      args => [qw( str str )],
-   },
-   kick => {
-      args => [qw( str str str )],
-   },
-
-   topic => {
-      args => [qw( str str )],
-   },
-);
-
-our %PROPS = (
-   topic => {
-      dim  => DIM_SCALAR,
-      type => 'str',
-   },
-
-   occupants => {
-      dim  => DIM_HASH,
-      type => 'dict(any)',
-   },
-
-   occupant_summary => {
-      dim  => DIM_HASH,
-      type => 'int',
-   },
-
-   my_flag => {
-      dim  => DIM_SCALAR,
-      type => 'str',
-   },
-
-   mode => {
-      dim  => DIM_HASH,
-      type => 'str',
-   },
-
-   modestr => {
-      dim  => DIM_SCALAR,
-      type => 'str',
-   },
-);
 
 sub new
 {
@@ -250,7 +182,7 @@ sub apply_modes
    my @mode_deleted;
 
    my $irc = $self->{irc};
-   my $PREFIX_FLAGS = $irc->isupport( "PREFIX_FLAGS" );
+   my $PREFIX_FLAGS = $irc->isupport( "prefix_flags" );
 
    foreach my $m ( @$modes ) {
       my ( $type, $sense, $mode ) = @{$m}{qw( type sense mode )};
@@ -322,7 +254,7 @@ sub post_update_occupants
 
    my $irc = $self->{irc};
 
-   my %count = map { $_ => 0 } "total", "", split( m//, $irc->isupport("PREFIX_FLAGS") );
+   my %count = map { $_ => 0 } "total", "", split( m//, $irc->isupport( "prefix_flags" ) );
 
    my $myflag;
 
@@ -858,7 +790,7 @@ sub make_widget
          my ( $self, $summary ) = @_;
 
          my $irc = $self->{irc};
-         my $PREFIX_FLAGS = $irc->isupport( "PREFIX_FLAGS" );
+         my $PREFIX_FLAGS = $irc->isupport( "prefix_flags" ) || "";
 
          my $str = "$summary->{total} users [" .
              CORE::join( " ", map { "$_$summary->{$_}" } grep { $summary->{$_}||0 > 0 } split( m//, $PREFIX_FLAGS ), "" ) .
