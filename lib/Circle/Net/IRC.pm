@@ -35,12 +35,12 @@ sub new
    my $self = $class->SUPER::new( %args );
 
    $self->{root} = $args{root};
-   $self->{loop} = $args{loop};
+   my $loop = $self->{loop} = $args{loop};
 
    # For WindowItem
    $self->set_prop_tag( $args{tag} );
 
-   $self->{irc} = Net::Async::IRC->new(
+   my $irc = $self->{irc} = Net::Async::IRC->new(
       on_message => sub {
          my ( $irc, $command, $message, $hints ) = @_;
          $self->on_message( $command, $message, $hints );
@@ -52,6 +52,7 @@ sub new
 
       encoding => "UTF-8",
    );
+   $loop->add( $irc );
 
    $self->{servers} = [];
 
@@ -781,6 +782,7 @@ sub command_connect
    : Command_opt('nick=$',  desc => "initial nick")
    : Command_opt('ident=$', desc => "alternative ident (default '\$USER')")
    : Command_opt('pass=$',  desc => "connection password")
+   : Command_opt('local_host=$', desc => "local host to bind")
 {
    my $self = shift;
    my ( $host, $opts, $cinv ) = @_;
@@ -804,9 +806,6 @@ sub command_connect
 
    my $irc = $self->{irc};
 
-   my $loop = $self->{loop};
-   $loop->add( $irc );
-
    my $nick = $opts->{nick} || $self->get_prop_nick;
 
    $irc->login( 
@@ -815,6 +814,8 @@ sub command_connect
       nick    => $nick,
       user    => $opts->{ident} || $s->{ident},
       pass    => $opts->{pass}  || $s->{pass},
+
+      local_host => $opts->{local_host} || $self->{local_host},
 
       on_login => sub {
          $cinv->respond( "Connected to $host", level => 1 );
@@ -828,7 +829,6 @@ sub command_connect
 
       on_error => sub {
          $cinv->responderr( "Unable to connect to $host - $_[0]", level => 3 );
-         $loop->remove( $irc );
       },
    );
 
@@ -1099,6 +1099,17 @@ sub get_item
    return undef;
 }
 
+sub setting_local_host
+   : Setting_description("Local bind address")
+   : Setting_type('str')
+{
+   my $self = shift;
+   my ( $newvalue ) = @_;
+
+   $self->{local_host} = $newvalue if @_;
+   return $self->{local_host};
+}
+
 sub setting_nick
    : Setting_description("Initial connection nick")
    : Setting_type('str')
@@ -1115,7 +1126,7 @@ sub load_configuration
    my $self = shift;
    my ( $ynode ) = @_;
 
-   $self->load_settings( $ynode, qw( nick ) );
+   $self->load_settings( $ynode, qw( nick local_host ) );
 
    $self->load_servers_configuration( $ynode );
 
@@ -1174,4 +1185,4 @@ sub get_widget_statusbar
    return $statusbar;
 }
 
-1;
+0x55AA;

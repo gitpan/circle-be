@@ -1,5 +1,16 @@
 Revision history for Circle
 
+0.04    CHANGES:
+         * Initial attempt at real unit tests
+         * Send application-level warnings to root object as 'warning' events
+         * Install circle.tan into sharedir
+         * Allow setting a local host name to bind for IRC connections
+
+        BUGFIXES:
+         * Add NaIRC to Loop at construct time
+         * Make stdin/stdout connect scheme actually work
+         * Remove kickee on IRC KICK, not kicker
+
 0.03    CHANGES:
          * Updated for Tangence 0.06
          * Persistance of sessions in config

@@ -215,4 +215,4 @@ sub store_rules_configuration
    $rulestore->get_chain( $_ ) or delete $rules_ynode->{$_} for keys %$rules_ynode;
 }
 
-1;
+0x55AA;

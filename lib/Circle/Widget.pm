@@ -21,4 +21,4 @@ sub new
    return $self;
 }
 
-1;
+0x55AA;

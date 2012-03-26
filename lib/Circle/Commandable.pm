@@ -359,4 +359,4 @@ sub get_widget_commandentry
    return $self->{widget_commandentry} = $widget;
 }
 
-1;
+0x55AA;

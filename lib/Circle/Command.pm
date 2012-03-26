@@ -149,4 +149,4 @@ sub invoke
    my $self = shift; $self->{cv}->( $self->{obj}, @_ );
 }
 
-1;
+0x55AA;

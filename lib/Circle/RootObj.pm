@@ -309,7 +309,7 @@ sub command_eval
          my $msg = $_[0];
          $msg =~ s/ at \(eval \d+\) line \d+\.$//;
          chomp $msg;
-         $cinv->respond( "W: $msg" )
+         $cinv->respondwarn( $msg, level => 2 );
       };
 
       eval join( "", map { "my \$$_ = \$pad{$_}; " } keys %pad ) . "$expr";
@@ -382,7 +382,7 @@ sub command_rerequire
          my $msg = $_[0];
          $msg =~ s/ at \(eval \d+\) line \d+\.$//;
          chomp $msg;
-         $cinv->respond( "W: $msg" )
+         $cinv->respondwarn( $msg, level => 2 );
       };
 
       no warnings 'redefine';
@@ -580,4 +580,4 @@ sub store_configuration
    }
 }
 
-1;
+0x55AA;

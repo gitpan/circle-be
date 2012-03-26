@@ -198,4 +198,4 @@ sub store_settings
    }
 }
 
-1;
+0x55AA;

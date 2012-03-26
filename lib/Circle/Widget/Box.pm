@@ -44,4 +44,4 @@ sub add_spacer
    $self->push_prop_children( \%opts );
 }
 
-1;
+0x55AA;

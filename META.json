@@ -4,7 +4,7 @@
       "Paul Evans <leonerd@leonerd.org.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.110930",
+   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.120630",
    "license" : [
       "open_source"
    ],
@@ -14,23 +14,30 @@
    },
    "name" : "circle-be",
    "prereqs" : {
+      "build" : {
+         "requires" : {
+            "Test::Identity" : "0",
+            "Test::More" : "0"
+         }
+      },
       "runtime" : {
          "requires" : {
             "Attribute::Storage" : "0.05",
-            "Data::Dump" : 0,
-            "IO::Async::Loop" : "0.16",
+            "Data::Dump" : "0",
+            "File::ShareDir" : "1.00",
+            "IO::Async::Loop" : "0.37",
             "Net::Async::IRC" : "0.04",
-            "Net::Async::Tangence::Server" : 0,
-            "String::Tagged" : 0,
+            "Net::Async::Tangence::Server" : "0",
+            "String::Tagged" : "0",
             "Tangence::Object" : "0.06",
-            "YAML" : 0
+            "YAML" : "0"
          }
       }
    },
    "provides" : {
       "Circle" : {
          "file" : "lib/Circle.pm",
-         "version" : "0.03"
+         "version" : "0.04"
       },
       "Circle::Collection" : {
          "file" : "lib/Circle/Collection.pm",
@@ -135,5 +142,5 @@
          "http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt"
       ]
    },
-   "version" : "0.03"
+   "version" : "0.04"
 }

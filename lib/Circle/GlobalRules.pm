@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
 
 package Circle::GlobalRules;
 
@@ -61,6 +61,9 @@ sub deparse_cond_matches
    # it if we can
    return "/$1/"  if $re =~ m/^\(\?-xism:(.*)\)$/;
    return "/$1/i" if $re =~ m/^\(\?i-xsm:(.*)\)$/;
+   # Recent perls use (?^:RE) instead
+   return "/$1/"  if $re =~ m/^\(\?\^:(.*)\)$/;
+   return "/$1/i" if $re =~ m/^\(\?\^i:(.*)\)$/;
 
    # Failed. Lets just be safe then
    return "/$re/";
@@ -292,4 +295,4 @@ sub eval_action_level
    $event->{level} = $level;
 }
 
-1;
+0x55AA;

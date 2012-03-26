@@ -73,6 +73,7 @@ sub peek_remaining
 # delegate these to invocant
 foreach my $method (qw(
    respond
+   respondwarn
    responderr
    respond_table
 )) {
@@ -80,4 +81,4 @@ foreach my $method (qw(
    *$method = sub { shift->invocant->$method( @_ ) };
 }
 
-1;
+0x55AA;

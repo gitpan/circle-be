@@ -107,6 +107,7 @@ sub command_connect
    $loop->connect(
       host    => $host,
       service => $port,
+      socktype => 'stream',
 
       on_connected => sub {
          my ( $sock ) = @_;
@@ -340,4 +341,4 @@ sub get_widget_statusbar
    return $statusbar;
 }
 
-1;
+0x55AA;

@@ -23,4 +23,4 @@ sub squash
    return \@output;
 }
 
-1;
+0x55AA;

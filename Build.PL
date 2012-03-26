@@ -9,14 +9,22 @@ my $build = Module::Build->new(
    requires => {
       'Attribute::Storage' => '0.05',
       'Data::Dump' => 0,
-      'IO::Async::Loop' => '0.16',
+      'File::ShareDir' => 0,
+      'IO::Async::Loop' => '0.37',
       'Net::Async::IRC' => '0.04',
       'Net::Async::Tangence::Server' => 0,
       'String::Tagged' => 0,
       'Tangence::Object' => '0.06',
       'YAML' => 0,
    },
+   build_requires => {
+      'Test::Identity' => 0,
+      'Test::More' => 0,
+   },
    auto_configure_requires => 0, # Don't add M::B to configure_requires
+   share_dir => {
+      module => { "Circle" => "share" },
+   },
    license => 'gpl',
    create_makefile_pl => 'traditional',
    create_license => 1,

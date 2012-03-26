@@ -96,4 +96,4 @@ sub command_close
    $self->destroy;
 }
 
-1;
+0x55AA;

@@ -259,8 +259,12 @@ sub post_update_occupants
    my $myflag;
 
    foreach my $occ ( values %{ $self->get_prop_occupants } ) {
-      unless( defined $occ->{flag} and defined $occ->{nick} ) {
-         warn "Have an undefined flag or nick in $occ in $self\n";
+      unless( defined $occ->{nick} ) {
+         warn "Have an undefined nick in $occ in $self\n";
+         next;
+      }
+      unless( defined $occ->{flag} ) {
+         warn "Have an undefined flag for nick $occ->{nick} in $occ in $self\n";
          next;
       }
 
@@ -348,7 +352,7 @@ sub on_message_KICK
       $self->push_displayevent( "irc.kick", { channel => $self->get_prop_name, kicker => $kicker, kicked => $kicked, kickmsg => $kickmsg_formatted } );
       $self->bump_level( 1 );
 
-      $self->user_leave( $hints->{prefix_nick_folded} );
+      $self->user_leave( $hints->{kicked_nick_folded} );
    }
 
    return 1;
@@ -809,4 +813,4 @@ sub make_widget
    return $box;
 }
 
-1;
+0x55AA;

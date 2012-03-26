@@ -7,16 +7,12 @@
 use strict;
 use warnings;
 
-use Tangence::Registry;
-
-use Net::Async::Tangence::Server;
-
-use Circle::RootObj;
-
-use IO::Async::Loop 0.16;
+use Circle;
+use IO::Async::Loop 0.37;
+use IO::Async::Stream;
 
 use Getopt::Long;
-use Socket qw( AF_INET AF_UNIX SOCK_STREAM pack_sockaddr_un );
+use Socket qw( AF_INET SOCK_STREAM );
 
 my $PORT;
 my $SOCKPATH;
@@ -30,45 +26,40 @@ defined $PORT and defined $SOCKPATH and die "Cannot specify both --port and --so
 
 my $loop = IO::Async::Loop->new();
 
-my $registry = Tangence::Registry->new(
-   tanfile => "circle.tan",
-);
-
-my $rootobj = $registry->construct(
-   "Circle::RootObj",
-   loop => $loop
-);
-$rootobj->id == 1 or die "Assert failed: root object does not have ID 1";
-
-my $server = Net::Async::Tangence::Server->new(
-   registry => $registry,
-);
-
-$loop->add( $server );
+my $circle = Circle->new( loop => $loop );
 
 if( defined $PORT ) {
-   $server->listen(
-      family => AF_INET, # So we'll only get one
-      socktype => SOCK_STREAM,
-      service => $PORT,
-
+   $circle->listen(
+      addr => {
+         family   => 'inet',
+         socktype => 'stream',
+         port     => $PORT,
+      },
+      on_fail => sub { print STDERR "Cannot $_[0] - $_[-1]\n"; },
       on_listen_error  => sub { print STDERR "Cannot listen\n"; },
-      on_resolve_error => sub { print STDERR "Cannot resolve - $_[0]\n"; },
    );
 }
 elsif( defined $SOCKPATH ) {
    if( -e $SOCKPATH ) {
       unlink $SOCKPATH or die "Cannot unlink $SOCKPATH - $!";
-   };
-   $server->listen(
-      addr => [ AF_UNIX, SOCK_STREAM, 0, pack_sockaddr_un( $SOCKPATH ) ],
-
+   }
+   $circle->listen(
+      addr => {
+         family   => 'unix',
+         socktype => 'stream',
+         path     => $SOCKPATH,
+      },
       on_fail => sub { print STDERR "Cannot $_[0] - $_[-1]\n"; },
       on_listen_error => sub { print STDERR "Cannot listen\n"; },
    );
 }
 else {
-   $server->new_conn( read_handle => \*STDIN, write_handle => \*STDOUT );
+   $circle->on_stream( IO::Async::Stream->new_for_stdio );
 }
+
+$SIG{__WARN__} = sub {
+   local $SIG{__WARN__}; # disable during itself to avoid looping
+   $circle->warn( @_ );
+};
 
 $loop->loop_forever;

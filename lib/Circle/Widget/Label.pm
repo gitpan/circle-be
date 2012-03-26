@@ -9,4 +9,4 @@ use warnings;
 
 use base qw( Circle::Widget );
 
-1;
+0x55AA;

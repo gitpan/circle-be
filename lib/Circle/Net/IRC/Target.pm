@@ -293,4 +293,4 @@ sub enter_text
    $self->msg( $text );
 }
 
-1;
+0x55AA;

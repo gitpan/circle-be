@@ -326,4 +326,4 @@ sub _mksub
    return $code;
 }
 
-1;
+0x55AA;

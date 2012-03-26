@@ -75,6 +75,17 @@ sub respond
    return;
 }
 
+sub respondwarn
+{
+   my $self = shift;
+   my ( $text, %opts ) = @_;
+
+   $self->push_displayevent( "warning", { text => $text } );
+   $self->bump_level( $opts{level} ) if $opts{level};
+
+   return;
+}
+
 sub responderr
 {
    my $self = shift;
@@ -202,4 +213,4 @@ sub get_widget_scroller
    return $self->{widget_displayevents} = $widget;
 }
 
-1;
+0x55AA;

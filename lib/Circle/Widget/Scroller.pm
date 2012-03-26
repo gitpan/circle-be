@@ -35,4 +35,4 @@ sub push_event
    $self->push_prop_displayevents( [ $event, time(), $args ] );
 }
 
-1;
+0x55AA;

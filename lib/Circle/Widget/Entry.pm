@@ -41,4 +41,4 @@ sub method_enter
    }
 }
 
-1;
+0x55AA;

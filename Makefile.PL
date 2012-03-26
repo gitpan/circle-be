@@ -2,23 +2,26 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
-          'NAME' => 'Circle',
-          'VERSION_FROM' => 'lib/Circle.pm',
-          'PREREQ_PM' => {
-                           'Attribute::Storage' => '0.05',
-                           'Data::Dump' => 0,
-                           'IO::Async::Loop' => '0.16',
-                           'Net::Async::IRC' => '0.04',
-                           'Net::Async::Tangence::Server' => 0,
-                           'String::Tagged' => 0,
-                           'Tangence::Object' => '0.06',
-                           'YAML' => 0
-                         },
-          'INSTALLDIRS' => 'site',
-          'EXE_FILES' => [
-                           'bin/circle-be',
-                           'bin/circle-fe-cmd'
-                         ],
-          'PL_FILES' => {}
-        )
+  'NAME' => 'Circle',
+  'VERSION_FROM' => 'lib/Circle.pm',
+  'PREREQ_PM' => {
+                   'Attribute::Storage' => '0.05',
+                   'Data::Dump' => 0,
+                   'File::ShareDir' => '1.00',
+                   'IO::Async::Loop' => '0.37',
+                   'Net::Async::IRC' => '0.04',
+                   'Net::Async::Tangence::Server' => 0,
+                   'String::Tagged' => 0,
+                   'Tangence::Object' => '0.06',
+                   'Test::Identity' => 0,
+                   'Test::More' => 0,
+                   'YAML' => 0
+                 },
+  'INSTALLDIRS' => 'site',
+  'EXE_FILES' => [
+                   'bin/circle-be',
+                   'bin/circle-fe-cmd'
+                 ],
+  'PL_FILES' => {}
+)
 ;

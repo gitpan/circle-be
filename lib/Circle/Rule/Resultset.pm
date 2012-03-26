@@ -73,4 +73,4 @@ sub merge_from
    }
 }
 
-1;
+0x55AA;

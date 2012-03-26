@@ -329,4 +329,4 @@ sub command_tab_move
    return;
 }
 
-1;
+0x55AA;

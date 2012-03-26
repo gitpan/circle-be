@@ -410,4 +410,4 @@ sub eval_cond_all
    return 1;
 }
 
-1;
+0x55AA;
