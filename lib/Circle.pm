@@ -7,8 +7,9 @@ package Circle;
 use strict;
 use warnings;
 use base qw( Net::Async::Tangence::Server );
+IO::Async::Notifier->VERSION( '0.43' ); # ->loop
 
-our $VERSION = '0.04';
+our $VERSION = '0.122820';
 
 use Carp;
 

@@ -1,4 +1,10 @@
+class Circle.Commandable {
+  method do_command(str);
+}
+
 class Circle.WindowItem {
+  isa Circle.Commandable;
+
   method reset_level();
   method get_widget() -> obj;
 
@@ -80,7 +86,7 @@ class Circle.Net.IRC.Channel {
 class Circle.Net.Raw {
   isa Circle.WindowItem;
 
-  event connected();
+  event connected(str,int);
   event disconnected();
 
   prop connected = bool;

@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
 
 package Circle::Commandable;
 
@@ -108,7 +108,9 @@ sub Command_default :ATTR(CODE)
 sub do_command
 {
    my $self = shift;
-   my ( $cmd, $cinv ) = @_;
+   my ( $cinv ) = @_;
+
+   my $cmd = $cinv->pull_token;
 
    my $command = undef;
    my %commands = Circle::Command->root_commands( $cinv );
@@ -132,7 +134,7 @@ sub do_command
       if( !$subcmd ) {
          # No default subcommand - issue help on $command instead
          my $helpinv = $cinv->nest( "help " . $command->name );
-         return $self->do_command( $helpinv->pull_token, $helpinv );
+         return $self->do_command( $helpinv );
       }
 
       $command = $subcmd;
@@ -317,6 +319,15 @@ sub command_help
    return;
 }
 
+sub method_do_command
+{
+   my $self = shift;
+   my ( $ctx, $command ) = @_;
+
+   my $cinv = Circle::CommandInvocation->new( $command, $ctx->stream, $self );
+   $self->do_command( $cinv );
+}
+
 ###
 # Widget
 ###
@@ -341,11 +352,7 @@ sub get_widget_commandentry
             substr( $text, 0, 1 ) = "";
 
             my $cinv = Circle::CommandInvocation->new( $text, $ctx->stream, $self );
-
-            my $cmd = $cinv->pull_token or 
-               return $cinv->responderr( "No command given" );
-
-            $self->do_command( $cmd, $cinv );
+            $self->do_command( $cinv );
          }
          elsif( $self->can( "enter_text" ) ) {
             $self->enter_text( $text );

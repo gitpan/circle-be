@@ -273,6 +273,8 @@ sub format_text_tagged
    #  ^U = underline
    #  ^_ = underline
    #  ^R = reverse or italic - we'll use italic
+   #  ^V = reverse
+   #  ^] = italics
    #  ^O = reset
    #  ^C = colour; followed by a code
    #     ^C      = reset colours
@@ -307,8 +309,11 @@ sub format_text_tagged
          elsif( $ctrl eq "U" or $ctrl eq "_" ) {
             $format{u} ? delete $format{u} : ( $format{u} = 1 );
          }
-         elsif( $ctrl eq "R" ) {
+         elsif( $ctrl eq "R" or $ctrl eq "]" ) {
             $format{i} ? delete $format{i} : ( $format{i} = 1 );
+         }
+         elsif( $ctrl eq "V" ) {
+            $format{rv} ? delete $format{rv} : ( $format{rv} = 1 );
          }
          elsif( $ctrl eq "O" ) {
             undef %format;
@@ -770,9 +775,10 @@ sub command_nick
 
    if( defined $newnick ) {
       $irc->change_nick( $newnick );
+      $self->set_prop_nick( $newnick );
    }
 
-   return ( "Nick: " . $irc->nick );
+   return;
 }
 
 sub command_connect
@@ -806,7 +812,7 @@ sub command_connect
 
    my $irc = $self->{irc};
 
-   my $nick = $opts->{nick} || $self->get_prop_nick;
+   my $nick = $opts->{nick} || $self->get_prop_nick || $self->{configured_nick};
 
    $irc->login( 
       host    => $host,
@@ -823,6 +829,8 @@ sub command_connect
          foreach my $target ( values %{ $self->{channels} }, values %{ $self->{users} } ) {
             $target->on_connected;
          }
+
+         $self->set_prop_nick( $nick );
 
          $self->fire_event( "connected" );
       },
@@ -1117,8 +1125,8 @@ sub setting_nick
    my $self = shift;
    my ( $newvalue ) = @_;
 
-   $self->set_prop_nick( $newvalue ) if defined $newvalue;
-   return $self->get_prop_nick;
+   $self->{configured_nick} = $newvalue if defined $newvalue;
+   return $self->{configured_nick};
 }
 
 sub load_configuration
@@ -1164,6 +1172,8 @@ sub get_widget_statusbar
       orientation => "horizontal",
    );
 
+   $statusbar->add( $self->get_widget_netname );
+
    my $nicklabel = $registry->construct(
       "Circle::Widget::Label",
    );
@@ -1183,6 +1193,23 @@ sub get_widget_statusbar
    $statusbar->add( $awaylabel );
 
    return $statusbar;
+}
+
+sub get_widget_netname
+{
+   my $self = shift;
+
+   return $self->{widget_netname} ||= do {
+      my $registry = $self->{registry};
+
+      my $widget = $registry->construct(
+         "Circle::Widget::Label",
+      );
+      $self->watch_property( "tag",
+         on_updated => sub { $widget->set_prop_text( $_[1] ) }
+      );
+      $widget;
+   };
 }
 
 0x55AA;

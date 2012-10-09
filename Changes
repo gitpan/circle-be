@@ -1,5 +1,18 @@
 Revision history for Circle
 
+0.122820 CHANGES:
+         * Switched to date-based version numbering scheme
+             http://rjbs.manxome.org/rubric/entry/1749
+
+         * Added --help option
+         * Added some unit testing
+         * Ensure that CommandInvocation objects don't hold the underlying
+           Tangence connection
+         * Cleaner handling of configured-vs-running nick
+         * Require --stdio flag to listen on STDIO
+         * Display IRC network name on network and channel tab status bars
+         * Parse IRC formatting for actual-italics and RV
+
 0.04    CHANGES:
          * Initial attempt at real unit tests
          * Send application-level warnings to root object as 'warning' events

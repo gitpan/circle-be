@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 13;
 use IO::Async::Test;
 
 use IO::Async::Loop;
@@ -32,11 +32,15 @@ my $widgets = get_widgetset_from $rootobj;
 ok( my $scroller = $widgets->{"Circle::Widget::Scroller"}, 'Found a Scroller widget' );
 ok( my $entry    = $widgets->{"Circle::Widget::Entry"},    'Found an Entry widget' );
 
+my $watching;
 my $displayevents;
 $scroller->watch_property(
    property => "displayevents",
    on_updated => sub { $displayevents = $_[0] },
+   on_watched => sub { $watching++ },
 );
+
+wait_for { $watching };
 
 my $time_before = time;
 
@@ -58,3 +62,20 @@ is( $event->[0], "response", '$event name' );
 # Can't quite be sure of the timestamp but it'll be bounded
 ok( $time_before >= $event->[1] && $event->[1] >= $time_after, '$event time' );
 is_deeply( $event->[2], { text => "Result: 1" }, '$event args' );
+
+undef $displayevents;
+$rootobj->call_method(
+   method => "do_command",
+   args => [ "eval 1" ],
+   on_result => sub { },
+);
+
+wait_for { $displayevents };
+
+( $event ) = @$displayevents;
+
+is( $event->[0], "response", '$event name from do_command' );
+# Can't quite be sure of the timestamp but it'll be bounded
+ok( $time_before >= $event->[1] && $event->[1] >= $time_after, '$event time from do_command' );
+is_deeply( $event->[2], { text => "Result: 1" }, '$event args from do_command' );
+

@@ -32,6 +32,18 @@ sub name
    return $self->get_prop_name;
 }
 
+use Scalar::Util qw( refaddr );
+use overload
+#   '""' => "STRING",
+   '+0' => sub { refaddr $_[0] },
+   fallback => 1;
+
+sub STRING
+{
+   my $self = shift;
+   return ref($self)."[name=".$self->name."]";
+}
+
 sub describe
 {
    my $self = shift;

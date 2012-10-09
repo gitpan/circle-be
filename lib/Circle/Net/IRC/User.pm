@@ -96,4 +96,21 @@ sub command_close
    $self->destroy;
 }
 
+sub get_widget_statusbar
+{
+   my $self = shift;
+
+   my $registry = $self->{registry};
+   my $net = $self->{net};
+
+   my $statusbar = $registry->construct(
+      "Circle::Widget::Box",
+      orientation => "horizontal",
+   );
+
+   $statusbar->add( $net->get_widget_netname );
+
+   return $statusbar;
+} 
+
 0x55AA;

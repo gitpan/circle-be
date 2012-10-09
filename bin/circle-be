@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 #  You may distribute under the terms of the GNU General Public License
 #
@@ -16,13 +16,40 @@ use Socket qw( AF_INET SOCK_STREAM );
 
 my $PORT;
 my $SOCKPATH;
+my $STDIO;
 
 GetOptions(
    'p|port=i'   => \$PORT,
    's|socket=s' => \$SOCKPATH,
-) or exit(1);
+   'stdio'      => \$STDIO,
+   'help' => sub { usage(0) },
+) or usage(1);
 
-defined $PORT and defined $SOCKPATH and die "Cannot specify both --port and --socket\n";
+sub usage
+{
+   my ( $exitcode ) = @_;
+
+   print { $exitcode ? \*STDERR : \*STDOUT } <<'EOF';
+circle-be [options...]
+
+Options:
+
+   --port, -p PORT           Listen on given TCP port
+
+   --socket, -s SOCKET       Listen on given UNIX socket path
+
+   --stdio                   Listen on STDIN/STDOUT
+
+EOF
+
+   exit $exitcode;
+}
+
+defined($PORT) + defined($SOCKPATH) + defined($STDIO) > 1 and
+   die "Cannot specify more than one of --port, --socket and --stdio\n";
+
+defined($PORT) or defined($SOCKPATH) or defined($STDIO) or
+   usage(1);
 
 my $loop = IO::Async::Loop->new();
 
@@ -53,7 +80,7 @@ elsif( defined $SOCKPATH ) {
       on_listen_error => sub { print STDERR "Cannot listen\n"; },
    );
 }
-else {
+elsif( $STDIO ) {
    $circle->on_stream( IO::Async::Stream->new_for_stdio );
 }
 

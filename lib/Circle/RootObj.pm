@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
 
 package Circle::RootObj;
 
@@ -439,7 +439,7 @@ sub command_delay
    # know it's delayed output from earlier, so as not to confuse
    my $subinv = $cinv->nest( $text );
 
-   my $cmdname = $subinv->pull_token or
+   my $cmdname = $subinv->peek_token or
       return $cinv->responderr( "No command given" );
 
    my $loop = $self->{loop};
@@ -448,7 +448,7 @@ sub command_delay
       delay => $seconds,
       code => sub {
          eval {
-            $subinv->invocant->do_command( $cmdname, $subinv );
+            $subinv->invocant->do_command( $subinv );
          };
          if( $@ ) {
             my $err = $@; chomp $err;
@@ -505,6 +505,20 @@ sub command_config_save
    YAML::DumpFile( $file, $self->get_configuration );
 
    $cinv->respond( "Configuration written to $file" );
+   return;
+}
+
+sub command_config_reload
+   : Command_description("Reload configuration from disk")
+   : Command_subof('config')
+{
+   my $self = shift;
+   my ( $cinv ) = @_;
+
+   my $file = CIRCLERC;
+   $self->load_configuration( YAML::LoadFile( $file ) );
+
+   $cinv->respond( "Configuration loaded from $file" );
    return;
 }
 

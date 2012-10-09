@@ -7,16 +7,33 @@ package t::CircleTest;
 use strict;
 use warnings;
 
-our $VERSION = '0.04';
+our $VERSION = '0.122820';
 
 use Exporter qw( import );
 our @EXPORT_OK = qw(
+   get_session
    get_widget_from
    get_widgetset_from
    send_command
 );
 
 use IO::Async::Test;
+
+sub get_session
+{
+   my ( $rootobj ) = @_;
+
+   my $session;
+   $rootobj->call_method(
+      method => "get_session",
+      args   => [ [qw( tabs )] ],
+      on_result => sub { $session = $_[0] },
+   );
+
+   wait_for { $session };
+
+   return $session;
+}
 
 sub get_widget_from
 {
@@ -60,14 +77,9 @@ sub send_command
 {
    my ( $windowitem, $command ) = @_;
 
-   my $widgetset = get_widgetset_from( $windowitem );
-
-   my $entry = $widgetset->{"Circle::Widget::Entry"} or
-      die "Expected $windowitem to have a Circle::Widget::Entry";
-
    my $done;
-   $entry->call_method(
-      method => "enter",
+   $windowitem->call_method(
+      method => "do_command",
       args   => [ $command ],
       on_result => sub { $done = 1 },
       on_error  => sub { die "Test failed early - $_[-1]" },

@@ -7,6 +7,8 @@ package Circle::CommandInvocation;
 use strict;
 use warnings;
 
+use Scalar::Util qw( weaken );
+
 sub new
 {
    my $class = shift;
@@ -14,7 +16,11 @@ sub new
 
    $text =~ s/^\s+//;
 
-   return bless [ $text, $connection, $invocant ], $class;
+   # Weaken the connection to ensure that this object doesn't hold on to the
+   # connection longer than required
+   my $self = bless [ $text, $connection, $invocant ], $class;
+   weaken( $self->[1] );
+   return $self;
 }
 
 sub nest

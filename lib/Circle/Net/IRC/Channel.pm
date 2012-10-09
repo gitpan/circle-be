@@ -191,7 +191,10 @@ sub apply_modes
                $sense < 0 ? "-" :
                             "";
 
-      if( $type eq 'list' ) {
+      if( !defined $type ) {
+         print STDERR "TODO: Undefined type for chanmode $mode\n";
+      }
+      elsif( $type eq 'list' ) {
          print STDERR "TODO: A list chanmode $pm$mode $m->{value}\n";
       }
       elsif( $type eq 'occupant' ) {
@@ -728,6 +731,72 @@ sub command_kick
 # Widget tree
 ###
 
+sub get_widget_statusbar
+{
+   my $self = shift;
+
+   my $registry = $self->{registry};
+   my $net = $self->{net};
+
+   my $statusbar = $registry->construct(
+      "Circle::Widget::Box",
+      orientation => "horizontal",
+   );
+
+   $statusbar->add( $net->get_widget_netname );
+
+   my $nicklabel = $registry->construct(
+      "Circle::Widget::Label",
+   );
+
+   # TODO: This is hideous...
+   my $nick = $net->get_prop_nick || $net->{configured_nick};
+   my $my_flag = "";
+   my $updatenicklabel = sub { $nicklabel->set_prop_text( $my_flag . $nick ) };
+   $net->watch_property( "nick",
+      on_set => sub { $nick = $_[1]; goto &$updatenicklabel }
+   );
+   $self->watch_property( "my_flag",
+      on_set => sub { $my_flag = $_[1]; goto &$updatenicklabel }
+   );
+   $updatenicklabel->();
+
+   $statusbar->add( $nicklabel );
+
+   my $modestrlabel = $registry->construct(
+      "Circle::Widget::Label",
+   );
+   $self->watch_property( "modestr",
+      on_updated => sub { $modestrlabel->set_prop_text( $_[1] ) }
+   );
+
+   $statusbar->add( $modestrlabel );
+
+   $statusbar->add_spacer( expand => 1 );
+
+   my $countlabel = $registry->construct(
+      "Circle::Widget::Label",
+   );
+   $self->watch_property( "occupant_summary",
+      on_updated => sub {
+         my ( $self, $summary ) = @_;
+
+         my $irc = $self->{irc};
+         my $PREFIX_FLAGS = $irc->isupport( "prefix_flags" ) || "";
+
+         my $str = "$summary->{total} users [" .
+             CORE::join( " ", map { "$_$summary->{$_}" } grep { $summary->{$_}||0 > 0 } split( m//, $PREFIX_FLAGS ), "" ) .
+             "]";
+
+         $countlabel->set_prop_text( $str );
+      }
+   );
+
+   $statusbar->add( $countlabel );
+
+   return $statusbar;
+}
+
 sub make_widget
 {
    my $self = shift;
@@ -751,62 +820,7 @@ sub make_widget
 
    $box->add( $self->get_widget_scroller, expand => 1 );
 
-   my $statusbox = $registry->construct(
-      "Circle::Widget::Box",
-      orientation => "horizontal",
-   );
-
-   my $nicklabel = $registry->construct(
-      "Circle::Widget::Label",
-   );
-
-   # TODO: This is hideous...
-   my $net = $self->{net};
-   my $nick = $net->get_prop_nick;
-   my $my_flag = "";
-   my $updatenicklabel = sub { $nicklabel->set_prop_text( $my_flag . $nick ) };
-   $net->watch_property( "nick",
-      on_set => sub { $nick = $_[1]; goto &$updatenicklabel }
-   );
-   $self->watch_property( "my_flag",
-      on_set => sub { $my_flag = $_[1]; goto &$updatenicklabel }
-   );
-   $updatenicklabel->();
-
-   $statusbox->add( $nicklabel );
-
-   my $modestrlabel = $registry->construct(
-      "Circle::Widget::Label",
-   );
-   $self->watch_property( "modestr",
-      on_updated => sub { $modestrlabel->set_prop_text( $_[1] ) }
-   );
-
-   $statusbox->add( $modestrlabel );
-
-   $statusbox->add_spacer( expand => 1 );
-
-   my $countlabel = $registry->construct(
-      "Circle::Widget::Label",
-   );
-   $self->watch_property( "occupant_summary",
-      on_updated => sub {
-         my ( $self, $summary ) = @_;
-
-         my $irc = $self->{irc};
-         my $PREFIX_FLAGS = $irc->isupport( "prefix_flags" ) || "";
-
-         my $str = "$summary->{total} users [" .
-             CORE::join( " ", map { "$_$summary->{$_}" } grep { $summary->{$_}||0 > 0 } split( m//, $PREFIX_FLAGS ), "" ) .
-             "]";
-
-         $countlabel->set_prop_text( $str );
-      }
-   );
-
-   $statusbox->add( $countlabel );
-
-   $box->add( $statusbox );
+   $box->add( $self->get_widget_statusbar );
 
    $box->add( $self->get_widget_commandentry );
 

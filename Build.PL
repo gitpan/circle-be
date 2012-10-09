@@ -10,6 +10,7 @@ my $build = Module::Build->new(
       'Attribute::Storage' => '0.05',
       'Data::Dump' => 0,
       'File::ShareDir' => 0,
+      'IO::Async::Notifier' => '0.43',
       'IO::Async::Loop' => '0.37',
       'Net::Async::IRC' => '0.04',
       'Net::Async::Tangence::Server' => 0,

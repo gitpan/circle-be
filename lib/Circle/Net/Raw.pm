@@ -129,7 +129,7 @@ sub command_connect
                $self->push_displayevent( "status", { text => "Connection closed by peer" } );
 
                $self->set_prop_connected(0);
-               $self->fire_event( "disconnected" );
+               $self->fire_event( disconnected => );
                undef $self->{conn};
             },
          );
@@ -139,7 +139,7 @@ sub command_connect
          $self->run_rulechain( "connected" );
 
          $self->set_prop_connected(1);
-         $self->fire_event( "connected" );
+         $self->fire_event( connected => $host, $port );
       },
 
       on_resolve_error => sub {
@@ -328,13 +328,13 @@ sub get_widget_statusbar
    my $serverlabel = $registry->construct(
       "Circle::Widget::Label",
    );
-   $self->watch_property( "connected", 
-      on_updated => sub {
-         my ( $self, $connected ) = @_;
-         $connected ? $serverlabel->set_prop_text( $self->{host} . ":" . $self->{port} )
-                    : $serverlabel->set_prop_text( "--unconnected--" );
-      }
-   );
+   $self->subscribe_event( connected => sub {
+      my ( $self, $host, $port ) = @_;
+      $serverlabel->set_prop_text( "$host:$port" );
+   } );
+   $self->subscribe_event( disconnected => sub {
+      $serverlabel->set_prop_text( "--unconnected--" );
+   } );
 
    $statusbar->add( $serverlabel );
 
