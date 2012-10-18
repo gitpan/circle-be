@@ -1,5 +1,10 @@
 Revision history for Circle
 
+0.122910 CHANGES:
+         * Added /rules condition of isaction (for IRC)
+         * Added /rules actions of rewrite (globally) and chaction (for IRC)
+         * Added /rules chain for output on IRC and Raw networks
+
 0.122820 CHANGES:
          * Switched to date-based version numbering scheme
              http://rjbs.manxome.org/rubric/entry/1749

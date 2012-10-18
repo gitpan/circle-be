@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::Target;
 
@@ -119,9 +119,10 @@ sub on_message_text
 
    my $event = {
       %$hints,
-      text  => $net->format_text_tagged( $text ),
-      level => $is_notice ? 1 : 2,
-      display => ( !defined $hints->{prefix_nick} or $is_notice && !$self->get_prop_real ) ? "server" : "self",
+      text      => $net->format_text_tagged( $text ),
+      is_action => 0, 
+      level     => $is_notice ? 1 : 2,
+      display   => ( !defined $hints->{prefix_nick} or $is_notice && !$self->get_prop_real ) ? "server" : "self",
    };
 
    $net->run_rulechain( "input", $event );
@@ -152,9 +153,10 @@ sub on_message_ctcp_ACTION
 
    my $event = {
       %$hints,
-      text  => $net->format_text_tagged( $text ),
-      level => 2,
-      display => "self",
+      text      => $net->format_text_tagged( $text ),
+      is_action => 1,
+      level     => 2,
+      display   => "self",
    };
 
    $net->run_rulechain( "input", $event );
@@ -188,27 +190,39 @@ sub on_disconnected
 sub msg
 {
    my $self = shift;
-   my ( $text ) = @_;
-
-   my @lines = split( m/\n/, $text );
+   my ( $text, %hints ) = @_;
 
    my $irc = $self->{irc};
    my $net = $self->{net};
 
-   foreach my $line ( @lines ) {
-      $irc->send_message( "PRIVMSG", undef, $self->name, $line );
+   my $event = {
+      text      => Circle::TaggedString->new( $text ),
+      is_action => $hints{action}, 
+   };
+
+   $net->run_rulechain( "output", $event );
+
+   my $is_action = $event->{is_action};
+
+   foreach my $line ( split m/\n/, $event->{text}->str ) {
+      if( $is_action ) {
+         $irc->send_ctcp( undef, $self->name, "ACTION", $line );
+      }
+      else {
+         $irc->send_message( "PRIVMSG", undef, $self->name, $line );
+      }
 
       my $line_formatted = $net->format_text( $line );
 
-      $self->fire_event( "msg", $irc->nick, $line );
-      $self->push_displayevent( "irc.msg", { target => $self->name, nick => $irc->nick, text => $line_formatted } );
+      $self->fire_event( $is_action ? "act" : "msg", $irc->nick, $line );
+      $self->push_displayevent( $is_action ? "irc.act" : "irc.msg", { target => $self->name, nick => $irc->nick, text => $line_formatted } );
    }
 }
 
 sub method_msg
 {
    my $self = shift; my $ctx = shift;
-   $self->msg( @_ );
+   $self->msg( $_[0], action => 0 );
 }
 
 sub notice
@@ -232,25 +246,10 @@ sub method_notice
    $self->notice( @_ );
 }
 
-sub act
-{
-   my $self = shift;
-   my ( $text ) = @_;
-
-   my $irc = $self->{irc};
-   $irc->send_ctcp( undef, $self->name, "ACTION", $text );
-
-   my $net = $self->{net};
-   my $text_formatted = $net->format_text( $text );
-
-   $self->fire_event( "act", $irc->nick, $text );
-   $self->push_displayevent( "irc.act", { target => $self->name, nick => $irc->nick, text => $text_formatted } );
-}
-
 sub method_act
 {
    my $self = shift; my $ctx = shift;
-   $self->act( @_ );
+   $self->msg( $_[0], action => 1 );
 }
 
 sub command_say
@@ -260,7 +259,7 @@ sub command_say
    my $self = shift;
    my ( $text ) = @_;
 
-   $self->msg( $text );
+   $self->msg( $text, action => 0 );
 
    return;
 }
@@ -272,7 +271,7 @@ sub command_me
    my $self = shift;
    my ( $text ) = @_;
 
-   $self->act( $text );
+   $self->msg( $text, action => 1 );
 
    return;
 }

@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
 
 package Circle::Net::Raw;
 
@@ -41,6 +41,7 @@ sub new
    $rulestore->register_action( "sendline" => $self );
 
    $rulestore->new_chain( "input" );
+   $rulestore->new_chain( "output" );
    $rulestore->new_chain( "connected" );
 
    return $self;
@@ -194,9 +195,15 @@ sub do_send
    # TODO: Line separator
 
    if( my $conn = $self->{conn} ) {
-      $conn->write( "$text\r\n" );
+      my $event = {
+         text => Circle::TaggedString->new( $text ),
+      };
 
-      $self->push_displayevent( "text", { text => $text } ) if $self->{echo};
+      $self->run_rulechain( "output", $event );
+
+      $conn->write( "$event->{text}\r\n" );
+
+      $self->push_displayevent( "text", { text => $event->{text} } ) if $self->{echo};
    }
    else {
       $self->responderr( "Not connected" );

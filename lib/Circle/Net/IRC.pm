@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC;
 
@@ -64,13 +64,17 @@ sub new
    $rulestore->register_cond( matchnick => $self );
    $rulestore->register_cond( fromnick  => $self );
    $rulestore->register_cond( channel   => $self );
+   $rulestore->register_cond( isaction  => $self );
 
    $rulestore->register_action( highlight => $self );
    $rulestore->register_action( display   => $self );
+   $rulestore->register_action( chaction  => $self );
 
    $rulestore->new_chain( "input" );
 
    $rulestore->get_chain( "input" )->append_rule( "matchnick: highlight" );
+
+   $rulestore->new_chain( "output" );
 
    return $self;
 }
@@ -543,6 +547,28 @@ sub eval_cond_channel
    return $event->{target_name_folded} eq $irc->casefold_name( $name );
 }
 
+sub parse_cond_isaction
+   : Rule_description("Event is a CTCP ACTION")
+   : Rule_format('')
+{
+   my $self = shift;
+   return undef;
+}
+
+sub deparse_cond_isaction
+{
+   my $self = shift;
+   return;
+}
+
+sub eval_cond_isaction
+{
+   my $self = shift;
+   my ( $event, $results, $name ) = @_;
+
+   return $event->{is_action};
+}
+
 sub parse_action_highlight
    : Rule_description("Highlight matched regions and set activity level to 3")
    : Rule_format('')
@@ -606,6 +632,32 @@ sub eval_action_display
    my ( $event, $results, $display ) = @_;
 
    $event->{display} = $display;
+}
+
+sub parse_action_chaction
+   : Rule_description("Change an event to or from being a CTCP ACTION")
+   : Rule_format('0|1')
+{
+   my $self = shift;
+   my ( $spec ) = @_;
+
+   return !!$spec;
+}
+
+sub deparse_action_chaction
+{
+   my $self = shift;
+   my ( $action ) = @_;
+
+   return $action;
+}
+
+sub eval_action_chaction
+{
+   my $self = shift;
+   my ( $event, $results, $action ) = @_;
+
+   $event->{is_action} = $action;
 }
 
 ###

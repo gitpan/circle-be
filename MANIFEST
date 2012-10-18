@@ -37,4 +37,5 @@ share/circle.tan
 t/00use.t
 t/01rootobj.t
 t/02session.t
+t/50net-raw.t
 t/CircleTest.pm

@@ -38,7 +38,7 @@
    "provides" : {
       "Circle" : {
          "file" : "lib/Circle.pm",
-         "version" : "0.122820"
+         "version" : "0.122910"
       },
       "Circle::Collection" : {
          "file" : "lib/Circle/Collection.pm",
@@ -143,5 +143,5 @@
          "http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt"
       ]
    },
-   "version" : "0.122820"
+   "version" : "0.122910"
 }
