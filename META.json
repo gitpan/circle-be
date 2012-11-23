@@ -4,7 +4,7 @@
       "Paul Evans <leonerd@leonerd.org.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.4001, CPAN::Meta::Converter version 2.120630",
+   "generated_by" : "Module::Build version 0.4001, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "open_source"
    ],
@@ -38,7 +38,7 @@
    "provides" : {
       "Circle" : {
          "file" : "lib/Circle.pm",
-         "version" : "0.122910"
+         "version" : "0.123270"
       },
       "Circle::Collection" : {
          "file" : "lib/Circle/Collection.pm",
@@ -143,5 +143,5 @@
          "http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt"
       ]
    },
-   "version" : "0.122910"
+   "version" : "0.123270"
 }

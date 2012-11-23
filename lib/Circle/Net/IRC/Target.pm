@@ -183,8 +183,9 @@ sub on_connected
 sub on_disconnected
 {
    my $self = shift;
+   my ( $message ) = @_;
 
-   $self->push_displayevent( "status", { text => "Server is disconected" } );
+   $self->push_displayevent( "status", { text => $message } );
 }
 
 sub msg

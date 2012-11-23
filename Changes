@@ -1,5 +1,11 @@
 Revision history for Circle
 
+0.123270 CHANGES:
+         * Maintain a network status display for IRC networks in the tag name
+           widget
+         * Handle ping timeout
+         * Avoid harmless "lvalue in substr()" warning from IO::Async
+
 0.122910 CHANGES:
          * Added /rules condition of isaction (for IRC)
          * Added /rules actions of rewrite (globally) and chaction (for IRC)

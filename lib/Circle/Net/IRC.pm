@@ -41,6 +41,7 @@ sub new
    $self->set_prop_tag( $args{tag} );
 
    my $irc = $self->{irc} = Net::Async::IRC->new(
+      # TODO: All these event handler subs should be weaselled
       on_message => sub {
          my ( $irc, $command, $message, $hints ) = @_;
          $self->on_message( $command, $message, $hints );
@@ -51,6 +52,15 @@ sub new
       },
 
       encoding => "UTF-8",
+
+      on_ping_timeout => sub {
+         $self->on_ping_timeout;
+      },
+
+      on_pong_reply => sub {
+         my ( $irc, $lag ) = @_;
+         $self->on_ping_reply( $lag );
+      },
    );
    $loop->add( $irc );
 
@@ -76,6 +86,8 @@ sub new
 
    $rulestore->new_chain( "output" );
 
+   $self->set_network_status( "disconnected" );
+
    return $self;
 }
 
@@ -96,6 +108,19 @@ sub get_prop_users
 sub reify
 {
    # always real; this is a no-op
+}
+
+sub set_network_status
+{
+   my $self = shift;
+   my ( $status ) = @_;
+
+   $self->{status} = $status;
+
+   my $text = $self->get_prop_tag;
+   $text .= "[$self->{status}]" if length $self->{status};
+
+   $self->{widget_netname}->set_prop_text( $text ) if $self->{widget_netname};
 }
 
 sub get_channel_if_exists
@@ -780,14 +805,39 @@ sub on_message_306
 sub on_closed
 {
    my $self = shift;
+   my ( $message ) = @_;
 
-   $self->push_displayevent( "status", { text => "Server is disconected" } );
+   $message ||= "Server is disconnected";
+   $self->set_network_status( "disconnected" );
+
+   $self->push_displayevent( "status", { text => $message } );
 
    foreach my $target ( values %{ $self->{channels} }, values %{ $self->{users} } ) {
-      $target->on_disconnected;
+      $target->on_disconnected( $message );
    }
 
    $self->fire_event( "disconnected" );
+}
+
+sub on_ping_timeout
+{
+   my $self = shift;
+
+   $self->on_closed( "Ping timeout" );
+   $self->{irc}->close;
+}
+
+sub on_ping_reply
+{
+   my $self = shift;
+   my ( $lag ) = @_;
+
+   if( $lag > 1 ) {
+      $self->set_network_status( sprintf "lag:%.2f", $lag );
+   }
+   else {
+      $self->set_network_status( "" );
+   }
 }
 
 sub method_get_isupport
@@ -884,6 +934,8 @@ sub command_connect
 
          $self->set_prop_nick( $nick );
 
+         $self->set_network_status( "" );
+
          $self->fire_event( "connected" );
       },
 
@@ -892,6 +944,7 @@ sub command_connect
       },
    );
 
+   $self->set_network_status( "connecting" );
    return ( "Connecting to $host ..." );
 }
 
@@ -1258,7 +1311,11 @@ sub get_widget_netname
          "Circle::Widget::Label",
       );
       $self->watch_property( "tag",
-         on_updated => sub { $widget->set_prop_text( $_[1] ) }
+         on_updated => sub {
+            my $text = $_[1];
+            $text .= "[$self->{status}]" if length $self->{status};
+            $widget->set_prop_text( $text );
+         }
       );
       $widget;
    };

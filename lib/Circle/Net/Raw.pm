@@ -201,7 +201,8 @@ sub do_send
 
       $self->run_rulechain( "output", $event );
 
-      $conn->write( "$event->{text}\r\n" );
+      my $str = $event->{text}->str;
+      $conn->write( "$str\r\n" );
 
       $self->push_displayevent( "text", { text => $event->{text} } ) if $self->{echo};
    }
