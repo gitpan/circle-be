@@ -305,4 +305,14 @@ sub enter_text
    $self->msg( $text );
 }
 
+sub get_widget_commandentry
+{
+   my $self = shift;
+   my $widget = $self->SUPER::get_widget_commandentry;
+
+   $self->{net}->add_entry_widget_completegroups( $widget );
+
+   return $widget;
+}
+
 0x55AA;

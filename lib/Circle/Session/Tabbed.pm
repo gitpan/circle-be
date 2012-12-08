@@ -329,4 +329,45 @@ sub command_tab_move
    return;
 }
 
+sub command_tab_goto
+   : Command_description("Activate a numbered tab\n".
+                         "POSITION may be an absolute number starting from 1,\n".
+                         "                a relative number with a leading + or -,\n".
+                         "                one of  first | left | right | last")
+   : Command_subof('tab')
+   : Command_arg('position')
+{
+   my $self = shift;
+   my ( $position, $cinv ) = @_;
+
+   my $tabs = $self->get_prop_tabs;
+
+   my $item = $cinv->invocant;
+
+   my $index;
+   $tabs->[$_] eq $item and ( $index = $_, last ) for 0 .. $#$tabs;
+
+   defined $index or return $cinv->responderr( "Cannot find current index of item" );
+
+   $position = "+1"   if $position eq "right";
+   $position = "-1"   if $position eq "left";
+   $position = "1"    if $position eq "first"; # 1-based
+   $position = @$tabs if $position eq "last";  # 1-based
+
+   if( $position =~ m/^[+-]/ ) {
+      # relative
+      $index += $position;
+   }
+   elsif( $position =~ m/^\d+$/ ) {
+      # absolute; but input from user was 1-based.
+      $index = $position - 1;
+   }
+   else {
+      return $cinv->responderr( "Unrecognised position/movement specification: $position" );
+   }
+
+   $self->get_prop_tabs->[$index]->fire_event( raise => () );
+   return;
+}
+
 0x55AA;

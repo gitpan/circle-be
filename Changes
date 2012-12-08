@@ -1,5 +1,12 @@
 Revision history for Circle
 
+0.123420 CHANGES:
+         * Implement tab-completion groups
+         * Provide tab-complete for IRC channel names, and occupants in each
+           channel
+         * Added /tab goto command to raise a window on all the FEs
+           + TODO: Consider only for one FE
+
 0.123270 CHANGES:
          * Maintain a network status display for IRC networks in the tag name
            widget

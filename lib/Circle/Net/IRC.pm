@@ -1321,4 +1321,57 @@ sub get_widget_netname
    };
 }
 
+sub get_widget_channel_completegroup
+{
+   my $self = shift;
+
+   return $self->{widget_channel_completegroup} ||= do {
+      my $registry = $self->{registry};
+
+      my $widget = $registry->construct(
+         "Circle::Widget::Entry::CompleteGroup",
+      );
+
+      # Have to cache id->name so we can delete properly
+      # TODO: Consider fixing on_del
+      my %id_to_name;
+      $self->watch_property( "channels",
+         on_set => sub {
+            my ( undef, $channels ) = @_;
+            $widget->set( map { $id_to_name{$_->id} = $_->name } values %$channels );
+         },
+         on_add => sub {
+            my ( undef, $added ) = @_;
+            $widget->add( $id_to_name{$added->id} = $added->name );
+         },
+         on_del => sub {
+            my ( undef, $deleted_id ) = @_;
+            $widget->remove( delete $id_to_name{$deleted_id} );
+         },
+      );
+
+      $widget->set( keys %{ $self->{channels} } );
+
+      $widget;
+   };
+}
+
+sub add_entry_widget_completegroups
+{
+   my $self = shift;
+   my ( $entry ) = @_;
+
+   $entry->add_prop_completions( $self->get_widget_channel_completegroup );
+}
+
+sub get_widget_commandentry
+{
+   my $self = shift;
+   my $widget = $self->SUPER::get_widget_commandentry;
+
+   $self->add_entry_widget_completegroups( $widget );
+
+   return $widget;
+}
+
 0x55AA;

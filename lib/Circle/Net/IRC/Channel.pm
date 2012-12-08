@@ -797,6 +797,51 @@ sub get_widget_statusbar
    return $statusbar;
 }
 
+sub get_widget_occupants_completegroup
+{
+   my $self = shift;
+
+   return $self->{widget_occupants_completegroup} ||= do {
+      my $registry = $self->{registry};
+
+      my $widget = $registry->construct(
+         "Circle::Widget::Entry::CompleteGroup",
+         suffix_sol => ": ",
+      );
+
+      my %key_to_nick;
+      $self->watch_property( "occupants",
+         on_set => sub {
+            my ( undef, $occupants ) = @_;
+            $widget->set( map { $key_to_nick{$_} = $occupants->{$_}{nick} } keys %$occupants );
+         },
+         on_add => sub {
+            my ( undef, $key, $occ ) = @_;
+            $widget->add( $key_to_nick{$key} = $occ->{nick} );
+         },
+         on_del => sub {
+            my ( undef, $key ) = @_;
+            $widget->remove( delete $key_to_nick{$key} );
+         },
+      );
+
+      my $occupants = $self->get_prop_occupants;
+      $widget->set( map { $key_to_nick{$_} = $occupants->{$_}{nick} } keys %$occupants );
+
+      $widget;
+   };
+}
+
+sub get_widget_commandentry
+{
+   my $self = shift;
+   my $widget = $self->SUPER::get_widget_commandentry;
+
+   $widget->add_prop_completions( $self->get_widget_occupants_completegroup );
+
+   return $widget;
+}
+
 sub make_widget
 {
    my $self = shift;

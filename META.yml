@@ -15,7 +15,7 @@ name: circle-be
 provides:
   Circle:
     file: lib/Circle.pm
-    version: 0.123270
+    version: 0.123420
   Circle::Collection:
     file: lib/Circle/Collection.pm
     version: 0
@@ -79,6 +79,9 @@ provides:
   Circle::Widget::Entry:
     file: lib/Circle/Widget/Entry.pm
     version: 0
+  Circle::Widget::Entry::CompleteGroup:
+    file: lib/Circle/Widget/Entry.pm
+    version: 0
   Circle::Widget::Label:
     file: lib/Circle/Widget/Label.pm
     version: 0
@@ -97,8 +100,9 @@ requires:
   Net::Async::IRC: 0.04
   Net::Async::Tangence::Server: 0
   String::Tagged: 0
+  Tangence::Message: 0.11
   Tangence::Object: 0.06
   YAML: 0
 resources:
   license: http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt
-version: 0.123270
+version: 0.123420

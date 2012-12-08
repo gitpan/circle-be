@@ -5,6 +5,8 @@ class Circle.Commandable {
 class Circle.WindowItem {
   isa Circle.Commandable;
 
+  event raise();
+
   method reset_level();
   method get_widget() -> obj;
 
@@ -111,6 +113,16 @@ class Circle.Widget.Entry {
   smashed prop autoclear = bool;
   prop text = str;
   prop history = queue of str;
+
+  prop completions = objset of obj;
+}
+
+class Circle.Widget.Entry.CompleteGroup {
+  smashed prop only_at_sol = bool;
+  smashed prop prefix_sol = str;
+  smashed prop suffix_sol = str;
+
+  smashed prop items = array of str;
 }
 
 class Circle.Widget.Label {

@@ -15,6 +15,7 @@ my $build = Module::Build->new(
       'Net::Async::IRC' => '0.04',
       'Net::Async::Tangence::Server' => 0,
       'String::Tagged' => 0,
+      'Tangence::Message' => '0.11', # for bugfix to objset serialisation
       'Tangence::Object' => '0.06',
       'YAML' => 0,
    },
