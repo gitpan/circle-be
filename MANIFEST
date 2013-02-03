@@ -1,5 +1,4 @@
 bin/circle-be
-bin/circle-fe-cmd
 Build.PL
 Changes
 lib/Circle.pm

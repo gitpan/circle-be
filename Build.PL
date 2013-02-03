@@ -18,6 +18,7 @@ my $build = Module::Build->new(
       'Tangence::Message' => '0.11', # for bugfix to objset serialisation
       'Tangence::Object' => '0.06',
       'YAML' => 0,
+      'perl' => '5.010',
    },
    build_requires => {
       'Test::Identity' => 0,

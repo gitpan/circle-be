@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::User;
 
@@ -13,6 +13,27 @@ use Carp;
 # Don't reprint RPL_USERISAWAY message within 1 hour
 # TODO: Some sort of config setting system
 my $awaytime_print = 3600;
+
+sub default_message_level
+{
+   my $self = shift;
+   my ( $hints ) = @_;
+
+   return 3;
+}
+
+sub on_message
+{
+   my $self = shift;
+   my ( $command, $message, $hints ) = @_;
+
+   my $ident    = $hints->{prefix_user};
+   my $hostname = $hints->{prefix_host};
+
+   $self->set_prop_ident( "$ident\@$hostname" );
+
+   return $self->SUPER::on_message( @_ );
+}
 
 sub on_message_NICK
 {
@@ -94,6 +115,23 @@ sub command_close
    my $self = shift;
 
    $self->destroy;
+}
+
+sub make_widget_pre_scroller
+{
+   my $self = shift;
+   my ( $box ) = @_;
+
+   my $registry = $self->{registry};
+
+   my $identlabel = $registry->construct(
+      "Circle::Widget::Label",
+   );
+   $self->watch_property( "ident",
+      on_updated => sub { $identlabel->set_prop_text( $_[1] ) }
+   );
+
+   $box->add( $identlabel );
 }
 
 sub get_widget_statusbar

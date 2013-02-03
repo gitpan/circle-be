@@ -188,6 +188,8 @@ sub make_widget
       orientation => "vertical",
    );
 
+   $self->make_widget_pre_scroller( $box ) if $self->can( "make_widget_pre_scroller" );
+
    $box->add( $self->get_widget_scroller, expand => 1 );
 
    $box->add( $self->get_widget_statusbar ) if $self->can( "get_widget_statusbar" );

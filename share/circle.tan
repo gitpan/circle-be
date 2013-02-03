@@ -62,6 +62,8 @@ class Circle.Net.IRC.User {
   isa Circle.Net.IRC.Target;
 
   event change_nick(str,str,str,str);
+
+  prop ident = str;
 }
 
 class Circle.Net.IRC.Channel {

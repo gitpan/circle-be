@@ -7,7 +7,7 @@ package t::CircleTest;
 use strict;
 use warnings;
 
-our $VERSION = '0.123420';
+our $VERSION = '0.130330';
 
 use Exporter qw( import );
 our @EXPORT_OK = qw(

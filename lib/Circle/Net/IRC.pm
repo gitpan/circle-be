@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC;
 
@@ -540,7 +540,7 @@ sub parse_cond_channel
    my $self = shift;
    my ( $spec ) = @_;
 
-   if( $spec =~ m/^"/ ) {
+   if( defined $spec and $spec =~ m/^"/ ) {
       my $name = extract_delimited( $spec, q{"} );
       s/^"//, s/"$// for $name;
 
@@ -564,7 +564,7 @@ sub eval_cond_channel
    my $self = shift;
    my ( $event, $results, $name ) = @_;
 
-   return 0 unless $event->{target_type}||"" eq "channel";
+   return 0 unless ( $event->{target_type} || "" ) eq "channel";
 
    return 1 unless defined $name;
 
@@ -960,9 +960,10 @@ sub command_disconnect
 sub command_join
    : Command_description("Join a channel")
    : Command_arg('channel')
+   : Command_opt('key=$', desc => "join key")
 {
    my $self = shift;
-   my ( $channel, $cinv ) = @_;
+   my ( $channel, $opts, $cinv ) = @_;
 
    my $irc = $self->{irc};
 
@@ -971,6 +972,7 @@ sub command_join
    $chanobj->reify;
 
    $chanobj->join(
+      key => $opts->{key},
       on_joined => sub {
          $cinv->respond( "Joined $channel", level => 1 );
       },
@@ -1117,6 +1119,7 @@ use Circle::Collection
       autojoin => { desc => "JOIN automatically when connected",
                     show => sub { $_ ? "yes" : "no" },
                   },
+      key      => { desc => "join key" },
    ],
    ;
 
@@ -1136,7 +1139,7 @@ sub channels_get
    return {
       name     => $chan->get_prop_name,
       joined   => $chan->{state} == Circle::Net::IRC::Channel::STATE_JOINED,
-      autojoin => $chan->{autojoin},
+      ( map { $_ => $chan->{$_} } qw( autojoin key ) ),
    };
 }
 
@@ -1147,7 +1150,9 @@ sub channels_set
 
    my $chanobj = $self->get_channel_if_exists( $name ) or die "Missing channel $name for channels_set";
 
-   $chanobj->{autojoin} = $def->{autojoin} if exists $def->{autojoin};
+   foreach (qw( autojoin key )) {
+      $chanobj->{$_} = $def->{$_} if exists $def->{$_};
+   }
 }
 
 sub channels_add

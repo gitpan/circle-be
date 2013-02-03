@@ -1,11 +1,12 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::Channel;
 
 use strict;
 use warnings;
+use 5.010; # //
 use base qw( Circle::Net::IRC::Target );
 
 use Carp;
@@ -52,7 +53,7 @@ sub on_connected
 sub on_disconnected
 {
    my $self = shift;
-   $self->SUPER::on_disconnected;
+   $self->SUPER::on_disconnected( @_ );
 
    $self->{rejoin_on_connect} = 1 if $self->{state} == STATE_JOINED;
 
@@ -72,8 +73,10 @@ sub join
 
    $self->{state} = STATE_JOINING;
 
+   my $key = $args{key} // $self->{key};
+
    my $irc = $self->{irc};
-   $irc->send_message( "JOIN", undef, $self->get_prop_name );
+   $irc->send_message( "JOIN", undef, $self->get_prop_name, defined $key ? ( $key ) : () );
 
    $self->{on_joined} = $on_joined;
    $self->{on_join_error} = $args{on_join_error};
@@ -767,7 +770,7 @@ sub get_widget_statusbar
       "Circle::Widget::Label",
    );
    $self->watch_property( "modestr",
-      on_updated => sub { $modestrlabel->set_prop_text( $_[1] ) }
+      on_updated => sub { $modestrlabel->set_prop_text( $_[1] || "" ) }
    );
 
    $statusbar->add( $modestrlabel );
@@ -842,18 +845,14 @@ sub get_widget_commandentry
    return $widget;
 }
 
-sub make_widget
+sub make_widget_pre_scroller
 {
    my $self = shift;
+   my ( $box ) = @_;
 
    my $registry = $self->{registry};
 
-   my $box = $registry->construct(
-      "Circle::Widget::Box",
-      orientation => "vertical",
-   );
-
-   my $topicentry = $self->{registry}->construct(
+   my $topicentry = $registry->construct(
       "Circle::Widget::Entry",
       on_enter => sub { $self->method_topic( $_[0] ) },
    );
@@ -862,14 +861,6 @@ sub make_widget
    );
 
    $box->add( $topicentry );
-
-   $box->add( $self->get_widget_scroller, expand => 1 );
-
-   $box->add( $self->get_widget_statusbar );
-
-   $box->add( $self->get_widget_commandentry );
-
-   return $box;
 }
 
 0x55AA;

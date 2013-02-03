@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::Target;
 
@@ -105,6 +105,14 @@ sub pick_display_target
    return $self->{net} if $display eq "server";
 }
 
+sub default_message_level
+{
+   my $self = shift;
+   my ( $hints ) = @_;
+
+   return $hints->{is_notice} ? 1 : 2;
+}
+
 sub on_message_text
 {
    my $self = shift;
@@ -121,7 +129,7 @@ sub on_message_text
       %$hints,
       text      => $net->format_text_tagged( $text ),
       is_action => 0, 
-      level     => $is_notice ? 1 : 2,
+      level     => $self->default_message_level( $hints ),
       display   => ( !defined $hints->{prefix_nick} or $is_notice && !$self->get_prop_real ) ? "server" : "self",
    };
 
@@ -155,7 +163,7 @@ sub on_message_ctcp_ACTION
       %$hints,
       text      => $net->format_text_tagged( $text ),
       is_action => 1,
-      level     => 2,
+      level     => $self->default_message_level( $hints ),
       display   => "self",
    };
 

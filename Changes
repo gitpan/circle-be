@@ -1,5 +1,12 @@
 Revision history for Circle
 
+0.130330 CHANGES:
+         * Support channel join keys
+         * Display user ident string above the main event scroller in user
+           query windows
+         * Bugfix "channel()" rules engine condition
+         * Bugfixes to IRC network disconnect handling
+
 0.123420 CHANGES:
          * Implement tab-completion groups
          * Provide tab-complete for IRC channel names, and occupants in each
