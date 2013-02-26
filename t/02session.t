@@ -20,7 +20,7 @@ wait_for { $rootobj = $client->rootobj };
 
 my $session = get_session $rootobj;
 
-ok( $session->proxy_isa( "Circle::Session::Tabbed" ), '$session proxy isa Circle::Session::Tabbed' );
+ok( $session->proxy_isa( "Circle.Session.Tabbed" ), '$session proxy isa Circle.Session.Tabbed' );
 
 my $tabs;
 $session->watch_property(
@@ -43,4 +43,4 @@ wait_for { $tabs };
 is( scalar @$tabs, 2, '$tabs contains 2 items after /networks add' );
 
 my $rawnet = $tabs->[1];
-ok( $rawnet->proxy_isa( "Circle::Net::Raw" ), '$tabs->[1] proxy isa Circle::Net::Raw' );
+ok( $rawnet->proxy_isa( "Circle.Net.Raw" ), '$tabs->[1] proxy isa Circle.Net.Raw' );

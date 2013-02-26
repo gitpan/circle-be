@@ -19,18 +19,18 @@ wait_for { $rootobj = $client->rootobj };
 
 isa_ok( $rootobj, "Tangence::ObjectProxy", '$rootobj' );
 
-ok( $rootobj->proxy_isa( "Circle::RootObj" ), '$rootobj proxy isa Circle::RootObj' );
-ok( $rootobj->proxy_isa( "Circle::WindowItem" ), '$rootobj proxy isa Circle::WindowItem' );
+ok( $rootobj->proxy_isa( "Circle.RootObj" ), '$rootobj proxy isa Circle.RootObj' );
+ok( $rootobj->proxy_isa( "Circle.WindowItem" ), '$rootobj proxy isa Circle.WindowItem' );
 
 my $global_widget = get_widget_from $rootobj;
 
-ok( $global_widget->proxy_isa( "Circle::Widget" ), '$global_widget' );
+ok( $global_widget->proxy_isa( "Circle.Widget" ), '$global_widget' );
 
 # Don't rely too much on exact UI layout; build a map of class->widget instead
 my $widgets = get_widgetset_from $rootobj;
 
-ok( my $scroller = $widgets->{"Circle::Widget::Scroller"}, 'Found a Scroller widget' );
-ok( my $entry    = $widgets->{"Circle::Widget::Entry"},    'Found an Entry widget' );
+ok( my $scroller = $widgets->{"Circle.Widget.Scroller"}, 'Found a Scroller widget' );
+ok( my $entry    = $widgets->{"Circle.Widget.Entry"},    'Found an Entry widget' );
 
 my $watching;
 my $displayevents;

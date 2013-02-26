@@ -1,5 +1,10 @@
 Revision history for Circle
 
+0.130560 CHANGES:
+         * Bugfix to user ident string setting
+         * Bugfix to server name display on server-forced MODE changes
+         * Updates for Tangence 0.18
+
 0.130330 CHANGES:
          * Support channel join keys
          * Display user ident string above the main event scroller in user

@@ -379,14 +379,20 @@ sub on_message_MODE
       $userhost = "$hints->{prefix_user}\@$hints->{prefix_host}";
    }
    else {
-      $nick = $userhost = $hints->{prefix_server};
+      $nick = $userhost = $hints->{prefix_host};
    }
 
    $self->apply_modes( $hints->{modes} );
 
    my $modestr = CORE::join( " ", $hints->{modechars}, @{ $hints->{modeargs} } );
 
-   $self->push_displayevent( "irc.mode", { channel => $self->get_prop_name, nick => $nick, userhost => $userhost, mode => $modestr } );
+   # 'nick' for legacy purposes, 'moder' for new
+   $self->push_displayevent( "irc.mode", {
+      channel  => $self->get_prop_name, 
+      nick     => $nick, moder => $nick,
+      userhost => $userhost,
+      mode     => $modestr,
+   } );
    $self->bump_level( 1 );
 
    return 1;

@@ -15,7 +15,7 @@ WriteMakefile
                    'Net::Async::Tangence::Server' => 0,
                    'String::Tagged' => 0,
                    'Tangence::Message' => '0.11',
-                   'Tangence::Object' => '0.06',
+                   'Tangence::Object' => '0.18',
                    'Test::Identity' => 0,
                    'Test::More' => 0,
                    'YAML' => 0

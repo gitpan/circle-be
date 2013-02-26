@@ -32,7 +32,7 @@ $session->get_property(
 );
 wait_for { defined $rawnet };
 
-ok( $rawnet->proxy_isa( "Circle::Net::Raw" ), '$rawnet proxy isa Circle::Net::Raw' );
+ok( $rawnet->proxy_isa( "Circle.Net.Raw" ), '$rawnet proxy isa Circle.Net.Raw' );
 
 my $connected_args;
 $rawnet->subscribe_event(
@@ -86,7 +86,7 @@ $serverstream->configure(
 );
 $loop->add( $serverstream );
 
-$widgets->{"Circle::Widget::Entry"}->call_method(
+$widgets->{"Circle.Widget.Entry"}->call_method(
    method => "enter",
    args   => [ "Hello, server!" ],
    on_result => sub { },
@@ -98,7 +98,7 @@ is( shift @lines_from_client, "Hello, server!", 'client can send to server' );
 
 my $watching;
 my @displayevents;
-$widgets->{"Circle::Widget::Scroller"}->watch_property(
+$widgets->{"Circle.Widget.Scroller"}->watch_property(
    property => "displayevents",
    on_set => sub {},
    on_push => sub {

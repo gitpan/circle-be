@@ -1,13 +1,13 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2012 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2012-2013 -- leonerd@leonerd.org.uk
 
 package t::CircleTest;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.130330';
+our $VERSION = '0.130560';
 
 use Exporter qw( import );
 our @EXPORT_OK = qw(
@@ -62,11 +62,11 @@ sub get_widgetset_from
    my %widgets;
    my @queue = ( $widget );
    while( my $w = shift @queue ) {
-      if( $w->proxy_isa( "Circle::Widget::Box" ) ) {
+      if( $w->proxy_isa( "Circle.Widget.Box" ) ) {
          push @queue, map { $_->{child} } @{ $w->prop( "children" ) };
       }
       else {
-         $widgets{ ( $w->proxy_isa )[0] } = $w;
+         $widgets{ ( $w->proxy_isa )[0]->name } = $w;
       }
    }
 

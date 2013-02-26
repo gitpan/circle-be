@@ -16,7 +16,7 @@ my $build = Module::Build->new(
       'Net::Async::Tangence::Server' => 0,
       'String::Tagged' => 0,
       'Tangence::Message' => '0.11', # for bugfix to objset serialisation
-      'Tangence::Object' => '0.06',
+      'Tangence::Object' => '0.18',
       'YAML' => 0,
       'perl' => '5.010',
    },

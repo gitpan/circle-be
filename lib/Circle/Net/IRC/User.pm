@@ -27,12 +27,24 @@ sub on_message
    my $self = shift;
    my ( $command, $message, $hints ) = @_;
 
-   my $ident    = $hints->{prefix_user};
-   my $hostname = $hints->{prefix_host};
+   # Numerics come from the server; real commands come from the user
+   if( $command !~ m/^(\d+)$/ ) {
+      my $ident    = $hints->{prefix_user};
+      my $hostname = $hints->{prefix_host};
 
-   $self->set_prop_ident( "$ident\@$hostname" );
+      $self->update_ident( "$ident\@$hostname" );
+   }
 
    return $self->SUPER::on_message( @_ );
+}
+
+sub update_ident
+{
+   my $self = shift;
+   my ( $ident ) = @_;
+
+   return if $self->get_prop_ident eq $ident;
+   $self->set_prop_ident( $ident );
 }
 
 sub on_message_NICK
