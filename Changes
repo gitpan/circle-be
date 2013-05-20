@@ -1,5 +1,15 @@
 Revision history for Circle
 
+0.131390 CHANGES:
+         * Allow circlerc location to be overridden by an env.var.
+         * An attempt at IRC reconnect logic
+         * Allow widgets to declare a set of style classes
+         * Longer ping times
+         * Load channel keys on startup
+         * Bugfix: IO::Async::OS has ->socketpair now
+         * Use new named server numerics from NaIRC 0.07
+         * Handle a few more channel information numerics
+
 0.130560 CHANGES:
          * Bugfix to user ident string setting
          * Bugfix to server name display on server-forced MODE changes

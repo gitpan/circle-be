@@ -16,6 +16,7 @@ sub new
 
    my $self = $class->SUPER::new( @_ );
 
+   $self->set_prop_classes( $args{classes} ) if $args{classes};
    $self->set_prop_focussed( 1 ) if $args{focussed};
 
    return $self;

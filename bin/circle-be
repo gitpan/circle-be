@@ -63,6 +63,7 @@ if( defined $PORT ) {
          family   => 'inet',
          socktype => 'stream',
          port     => $PORT,
+         ip       => '0.0.0.0', # fscking....
       },
       on_fail => sub { print STDERR "Cannot $_[0] - $_[-1]\n"; },
       on_listen_error  => sub { print STDERR "Cannot listen\n"; },

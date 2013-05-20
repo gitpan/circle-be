@@ -97,6 +97,7 @@ class Circle.Net.Raw {
 }
 
 class Circle.Widget {
+  smashed prop classes = array of str;
   smashed prop focussed = bool;
 }
 

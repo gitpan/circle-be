@@ -24,8 +24,10 @@ use Circle::Widget::Box;
 use Circle::Widget::Label;
 
 use Net::Async::IRC;
+use IO::Async::Timer::Countdown;
 
 use Text::Balanced qw( extract_delimited );
+use Scalar::Util qw( weaken );
 
 sub new
 {
@@ -53,16 +55,25 @@ sub new
 
       encoding => "UTF-8",
 
+      pingtime => 120,
       on_ping_timeout => sub {
          $self->on_ping_timeout;
       },
 
+      pongtime => 60,
       on_pong_reply => sub {
          my ( $irc, $lag ) = @_;
          $self->on_ping_reply( $lag );
       },
    );
    $loop->add( $irc );
+
+   weaken( my $weakself = $self );
+   $self->{reconnect_timer} = IO::Async::Timer::Countdown->new(
+      delay     => 1, # Doesn't matter, as ->enqueue_reconnect will set it before start anyway
+      on_expire => sub { $weakself and $weakself->reconnect },
+   );
+   $loop->add( $self->{reconnect_timer} );
 
    $self->{servers} = [];
 
@@ -259,6 +270,45 @@ sub get_target_or_create
    else {
       return undef;
    }
+}
+
+sub connect
+{
+   my $self = shift;
+   my %args = @_;
+
+   my $irc = $self->{irc};
+
+   my $host = $args{host};
+   my $nick = $args{nick} || $self->get_prop_nick || $self->{configured_nick};
+
+   $irc->login( 
+      host    => $host,
+      service => $args{port},
+      nick    => $nick,
+      user    => $args{ident},
+      pass    => $args{pass},
+
+      local_host => $args{local_host} || $self->{local_host},
+
+      on_login => sub {
+         $args{on_login}->();
+
+         foreach my $target ( values %{ $self->{channels} }, values %{ $self->{users} } ) {
+            $target->on_connected;
+         }
+
+         $self->set_prop_nick( $nick );
+
+         $self->set_network_status( "" );
+
+         $self->fire_event( "connected" );
+      },
+
+      on_error => $args{on_error},
+   );
+
+   $self->set_network_status( "connecting" );
 }
 
 sub connected
@@ -776,7 +826,7 @@ sub on_message_motd
    return 1;
 }
 
-sub on_message_305
+sub on_message_RPL_UNAWAY
 {
    my $self = shift;
    my ( $message, $hints ) = @_;
@@ -789,7 +839,7 @@ sub on_message_305
    return 1;
 }
 
-sub on_message_306
+sub on_message_RPL_NOWAWAY
 {
    my $self = shift;
    my ( $message, $hints ) = @_;
@@ -817,6 +867,38 @@ sub on_closed
    }
 
    $self->fire_event( "disconnected" );
+
+   $self->{reconnect_delay_idx} = 0;
+   $self->{reconnect_host_idx} = 0;
+   $self->enqueue_reconnect if !$self->{reconnect_timer}->is_running;
+}
+
+my @reconnect_delays = ( 5, 5, 10, 30, 60 );
+sub enqueue_reconnect
+{
+   my $self = shift;
+   my $delay = $reconnect_delays[ $self->{reconnect_delay_idx}++ ] // $reconnect_delays[-1];
+
+   my $timer = $self->{reconnect_timer};
+   $timer->configure( delay => $delay );
+   $timer->start;
+}
+
+sub reconnect
+{
+   my $self = shift;
+
+   my $s = $self->{servers}->[ $self->{reconnect_host_idx}++ ];
+   $self->{reconnect_host_idx} %= @{ $self->{servers} };
+
+   $self->connect(
+      host => $s->{host},
+      port => $s->{port},
+      user => $s->{user},
+      pass => $s->{pass},
+      on_login => sub {},
+      on_error => sub { $self->enqueue_reconnect },
+   );
 }
 
 sub on_ping_timeout
@@ -910,41 +992,26 @@ sub command_connect
    }
    else {
       ( $s ) = grep { $_->{host} eq $host } @{ $self->{servers} };
+      $s or return $cinv->responderr( "No definition for $host" );
    }
 
-   my $irc = $self->{irc};
+   $self->{reconnect_timer}->stop;
 
-   my $nick = $opts->{nick} || $self->get_prop_nick || $self->{configured_nick};
-
-   $irc->login( 
-      host    => $host,
-      service => $opts->{port}  || $s->{port},
-      nick    => $nick,
-      user    => $opts->{ident} || $s->{ident},
-      pass    => $opts->{pass}  || $s->{pass},
-
-      local_host => $opts->{local_host} || $self->{local_host},
-
+   $self->connect( 
+      host => $host,
+      nick => $opts->{nick},
+      port => $opts->{port} || $s->{port},
+      user => $opts->{user} || $s->{user},
+      pass => $opts->{pass} || $s->{pass},
+      local_host => $opts->{local_host},
       on_login => sub {
          $cinv->respond( "Connected to $host", level => 1 );
-
-         foreach my $target ( values %{ $self->{channels} }, values %{ $self->{users} } ) {
-            $target->on_connected;
-         }
-
-         $self->set_prop_nick( $nick );
-
-         $self->set_network_status( "" );
-
-         $self->fire_event( "connected" );
       },
-
       on_error => sub {
          $cinv->responderr( "Unable to connect to $host - $_[0]", level => 3 );
       },
    );
 
-   $self->set_network_status( "connecting" );
    return ( "Connecting to $host ..." );
 }
 
@@ -1164,7 +1231,9 @@ sub channels_add
 
    $chanobj->reify;
 
-   $chanobj->{autojoin} = $def->{autojoin};
+   foreach (qw( autojoin key )) {
+      $chanobj->{$_} = $def->{$_} if exists $def->{$_};
+   }
 }
 
 sub channels_del
@@ -1279,6 +1348,7 @@ sub get_widget_statusbar
 
    my $statusbar = $registry->construct(
       "Circle::Widget::Box",
+      classes => [qw( status )],
       orientation => "horizontal",
    );
 
@@ -1286,6 +1356,7 @@ sub get_widget_statusbar
 
    my $nicklabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( nick )],
    );
    $self->watch_property( "nick",
       on_updated => sub { $nicklabel->set_prop_text( $_[1] ) }
@@ -1295,6 +1366,7 @@ sub get_widget_statusbar
 
    my $awaylabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( away )],
    );
    $self->watch_property( "away",
       on_updated => sub { $awaylabel->set_prop_text( $_[1] ? "[AWAY]" : "" ) }
@@ -1314,6 +1386,7 @@ sub get_widget_netname
 
       my $widget = $registry->construct(
          "Circle::Widget::Label",
+         classes => [qw( netname )],
       );
       $self->watch_property( "tag",
          on_updated => sub {

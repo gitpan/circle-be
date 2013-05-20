@@ -330,11 +330,13 @@ sub get_widget_statusbar
 
    my $statusbar = $registry->construct(
       "Circle::Widget::Box",
+      classes => [qw( status )],
       orientation => "horizontal",
    );
 
    my $serverlabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( label )],
    );
    $self->subscribe_event( connected => sub {
       my ( $self, $host, $port ) = @_;

@@ -7,7 +7,7 @@ build_requires:
   Test::More: 0
 dynamic_config: 1
 generated_by: 'Module::Build version 0.4001, CPAN::Meta::Converter version 2.120921'
-license: open_source
+license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
@@ -15,7 +15,7 @@ name: circle-be
 provides:
   Circle:
     file: lib/Circle.pm
-    version: 0.130560
+    version: 0.131390
   Circle::Collection:
     file: lib/Circle/Collection.pm
     version: 0
@@ -97,7 +97,7 @@ requires:
   File::ShareDir: 1.00
   IO::Async::Loop: 0.37
   IO::Async::Notifier: 0.43
-  Net::Async::IRC: 0.04
+  Net::Async::IRC: 0.07
   Net::Async::Tangence::Server: 0
   String::Tagged: 0
   Tangence::Message: 0.11
@@ -105,5 +105,5 @@ requires:
   YAML: 0
   perl: 5.010
 resources:
-  license: http://www.gnu.org/licenses/old-licenses/gpl-1.0.txt
-version: 0.130560
+  license: http://dev.perl.org/licenses/
+version: 0.131390

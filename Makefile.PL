@@ -11,7 +11,7 @@ WriteMakefile
                    'File::ShareDir' => '1.00',
                    'IO::Async::Loop' => '0.37',
                    'IO::Async::Notifier' => '0.43',
-                   'Net::Async::IRC' => '0.04',
+                   'Net::Async::IRC' => '0.07',
                    'Net::Async::Tangence::Server' => 0,
                    'String::Tagged' => 0,
                    'Tangence::Message' => '0.11',

@@ -9,7 +9,7 @@ use warnings;
 use base qw( Net::Async::Tangence::Server );
 IO::Async::Notifier->VERSION( '0.43' ); # ->loop
 
-our $VERSION = '0.130560';
+our $VERSION = '0.131390';
 
 use Carp;
 
@@ -17,6 +17,8 @@ use Tangence::Registry;
 use Circle::RootObj;
 
 use File::ShareDir qw( module_file );
+
+use IO::Async::OS;
 
 =head1 NAME
 
@@ -58,7 +60,7 @@ sub make_local_client
 
    my $loop = $self->loop;
 
-   my ( $S1, $S2 ) = $loop->socketpair or die "Cannot socketpair - $!";
+   my ( $S1, $S2 ) = IO::Async::OS->socketpair or die "Cannot socketpair - $!";
 
    require IO::Async::Stream;
    $self->on_stream( IO::Async::Stream->new( handle => $S1 ) );

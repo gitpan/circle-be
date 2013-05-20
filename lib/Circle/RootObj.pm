@@ -29,7 +29,7 @@ use Module::Pluggable sub_name    => "net_types",
 
 use Data::Dump;
 
-use constant CIRCLERC => "$ENV{HOME}/.circlerc";
+use constant CIRCLERC => $ENV{CIRCLERC} || "$ENV{HOME}/.circlerc";
 
 sub _nettype2class
 {

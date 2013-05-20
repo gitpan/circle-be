@@ -43,7 +43,7 @@ sub update_ident
    my $self = shift;
    my ( $ident ) = @_;
 
-   return if $self->get_prop_ident eq $ident;
+   return if defined $self->get_prop_ident and $self->get_prop_ident eq $ident;
    $self->set_prop_ident( $ident );
 }
 
@@ -89,7 +89,7 @@ sub on_message_QUIT
    return 1;
 }
 
-sub on_message_301 # RPL_AWAY
+sub on_message_RPL_AWAY
 {
    my $self = shift;
    my ( $message, $hints ) = @_;
@@ -138,6 +138,7 @@ sub make_widget_pre_scroller
 
    my $identlabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( ident )],
    );
    $self->watch_property( "ident",
       on_updated => sub { $identlabel->set_prop_text( $_[1] ) }
@@ -155,6 +156,7 @@ sub get_widget_statusbar
 
    my $statusbar = $registry->construct(
       "Circle::Widget::Box",
+      classes => [qw( status )],
       orientation => "horizontal",
    );
 

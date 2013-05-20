@@ -17,6 +17,8 @@ use Circle::Widget::Box;
 use Circle::Widget::Entry;
 use Circle::Widget::Label;
 
+use POSIX qw( strftime );
+
 use constant STATE_UNJOINED => 0;
 use constant STATE_JOINING  => 1;
 use constant STATE_JOINED   => 2;
@@ -512,7 +514,7 @@ sub on_message_TOPIC
    return 1;
 }
 
-sub on_message_324 # RPL_CHANNELMODEIS
+sub on_message_RPL_CHANNELMODEIS
 {
    my $self = shift;
    my ( $message, $hints ) = @_;
@@ -527,7 +529,17 @@ sub on_message_324 # RPL_CHANNELMODEIS
    return 1;
 }
 
-sub on_message_332 # RPL_TOPIC
+sub on_message_RPL_NOTOPIC
+{
+   my $self = shift;
+   my ( $message, $hints ) = @_;
+
+   $self->set_prop_topic( "" );
+
+   return 1;
+}
+
+sub on_message_RPL_TOPIC
 {
    my $self = shift;
    my ( $message, $hints ) = @_;
@@ -535,6 +547,47 @@ sub on_message_332 # RPL_TOPIC
    my $topic = $hints->{text};
 
    $self->set_prop_topic( $topic );
+
+   $self->fire_event( "topic", undef, $topic );
+   $self->push_displayevent( "irc.topic_is", { channel => $self->get_prop_name, topic => $topic } );
+   $self->bump_level( 1 );
+
+   return 1;
+}
+
+sub on_message_RPL_TOPICWHOTIME
+{
+   my $self = shift;
+   my ( $message, $hints ) = @_;
+
+   my $timestr = strftime "%Y/%m/%d %H:%M:%S", localtime $hints->{timestamp};
+
+   $self->push_displayevent( "irc.topic_by", { channel => $self->get_prop_name, topic_by => $hints->{topic_nick}, timestamp => $timestr } );
+   $self->bump_level( 1 );
+
+   return 1;
+}
+
+sub on_message_RPL_CHANNEL_URL
+{
+   my $self = shift;
+   my ( $message, $hints ) = @_;
+
+   $self->push_displayevent( "irc.text", { server => $hints->{prefix_host}, text => "URL: $hints->{text}" } );
+   $self->bump_level( 1 );
+
+   return 1;
+}
+
+sub on_message_RPL_CHANNELCREATED
+{
+   my $self = shift;
+   my ( $message, $hints ) = @_;
+
+   my $timestr = strftime "%Y/%m/%d %H:%M:%S", localtime $hints->{timestamp};
+
+   $self->push_displayevent( "irc.text", { server => $hints->{prefix_host}, text => "Channel created $timestr" } );
+   $self->bump_level( 1 );
 
    return 1;
 }
@@ -749,6 +802,7 @@ sub get_widget_statusbar
 
    my $statusbar = $registry->construct(
       "Circle::Widget::Box",
+      classes => [qw( status )],
       orientation => "horizontal",
    );
 
@@ -756,6 +810,7 @@ sub get_widget_statusbar
 
    my $nicklabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( nick )],
    );
 
    # TODO: This is hideous...
@@ -774,6 +829,7 @@ sub get_widget_statusbar
 
    my $modestrlabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( mode )],
    );
    $self->watch_property( "modestr",
       on_updated => sub { $modestrlabel->set_prop_text( $_[1] || "" ) }
@@ -785,6 +841,7 @@ sub get_widget_statusbar
 
    my $countlabel = $registry->construct(
       "Circle::Widget::Label",
+      classes => [qw( occupants )],
    );
    $self->watch_property( "occupant_summary",
       on_updated => sub {
@@ -860,6 +917,7 @@ sub make_widget_pre_scroller
 
    my $topicentry = $registry->construct(
       "Circle::Widget::Entry",
+      classes => [qw( topic )],
       on_enter => sub { $self->method_topic( $_[0] ) },
    );
    $self->watch_property( "topic",
