@@ -6,7 +6,7 @@ build_requires:
   Test::Identity: 0
   Test::More: 0
 dynamic_config: 1
-generated_by: 'Module::Build version 0.4001, CPAN::Meta::Converter version 2.120921'
+generated_by: 'Module::Build version 0.4005, CPAN::Meta::Converter version 2.120921'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -15,7 +15,7 @@ name: circle-be
 provides:
   Circle:
     file: lib/Circle.pm
-    version: 0.131390
+    version: 0.132150
   Circle::Collection:
     file: lib/Circle/Collection.pm
     version: 0
@@ -106,4 +106,4 @@ requires:
   perl: 5.010
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.131390
+version: 0.132150

@@ -1,5 +1,12 @@
 Revision history for Circle
 
+0.132150 CHANGES:
+         * Implement a /disconnect IRC command
+         * Added /dumpevents and associated event log formatter
+         * Allow /topic alone to redisplay the full text of a channel topic
+         * Bugfix to 'on_enter' handling of channel topic Entry widget
+         * Configurable use of mIRC colouring hints
+
 0.131390 CHANGES:
          * Allow circlerc location to be overridden by an env.var.
          * An attempt at IRC reconnect logic

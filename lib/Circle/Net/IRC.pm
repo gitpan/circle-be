@@ -401,11 +401,11 @@ sub format_text_tagged
             my $colourre = qr/#[0-9a-f]{6}|#[0-9a-f]{3}|\d\d?/i;
 
             if( $text =~ s/^($colourre),($colourre)// ) {
-               $format{fg} = $self->format_colour( $1 );
-               $format{bg} = $self->format_colour( $2 );
+               $format{fg} = $self->format_colour( $1 ) if $self->{use_mirc_colours};
+               $format{bg} = $self->format_colour( $2 ) if $self->{use_mirc_colours};
             }
             elsif( $text =~ s/^($colourre)// ) {
-               $format{fg} = $self->format_colour( $1 );
+               $format{fg} = $self->format_colour( $1 ) if $self->{use_mirc_colours};
             }
             else {
                delete $format{fg};
@@ -868,9 +868,12 @@ sub on_closed
 
    $self->fire_event( "disconnected" );
 
-   $self->{reconnect_delay_idx} = 0;
-   $self->{reconnect_host_idx} = 0;
-   $self->enqueue_reconnect if !$self->{reconnect_timer}->is_running;
+   unless( $self->{no_reconnect_on_close} ) {
+      $self->{reconnect_delay_idx} = 0;
+      $self->{reconnect_host_idx} = 0;
+      $self->enqueue_reconnect if !$self->{reconnect_timer}->is_running;
+   }
+   undef $self->{no_reconnect_on_close};
 }
 
 my @reconnect_delays = ( 5, 5, 10, 30, 60 );
@@ -1017,11 +1020,19 @@ sub command_connect
 
 sub command_disconnect
    : Command_description("Disconnect from the IRC server")
+   : Command_arg('message', eatall => 1)
 {
    my $self = shift;
+   my ( $message ) = @_;
 
    my $irc = $self->{irc};
+
+   $irc->send_message( "QUIT", undef, $message );
    $irc->close;
+
+   $self->{no_reconnect_on_close} = 1;
+
+   return;
 }
 
 sub command_join
@@ -1308,12 +1319,24 @@ sub setting_nick
    return $self->{configured_nick};
 }
 
+sub setting_use_mirc_colours
+   : Setting_description("Use mIRC colouring information")
+   : Setting_type('bool')
+   : Setting_default(1)
+{
+   my $self = shift;
+   my ( $newvalue ) = @_;
+
+   $self->{use_mirc_colours} = $newvalue if defined $newvalue;
+   return $self->{use_mirc_colours};
+}
+
 sub load_configuration
 {
    my $self = shift;
    my ( $ynode ) = @_;
 
-   $self->load_settings( $ynode, qw( nick local_host ) );
+   $self->load_settings( $ynode );
 
    $self->load_servers_configuration( $ynode );
 
@@ -1327,7 +1350,7 @@ sub store_configuration
    my $self = shift;
    my ( $ynode ) = @_;
 
-   $self->store_settings( $ynode, qw( nick ) );
+   $self->store_settings( $ynode );
 
    $self->store_servers_configuration( $ynode );
 

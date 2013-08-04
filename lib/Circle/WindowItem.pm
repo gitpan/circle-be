@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
 
 package Circle::WindowItem;
 
@@ -162,6 +162,20 @@ sub command_clear
 
    $scroller->shift_prop_displayevents( $to_delete ) if $to_delete > 0;
 
+   return;
+}
+
+sub command_dumpevents
+   : Command_description("Dump a log of the raw event buffer")
+   : Command_arg('filename')
+{
+   my $self = shift;
+   my ( $filename, $cinv ) = @_;
+
+   my $scroller = $self->get_widget_scroller;
+   YAML::DumpFile( $filename, $scroller->get_prop_displayevents );
+
+   $cinv->respond( "Dumped event log to $filename" );
    return;
 }
 

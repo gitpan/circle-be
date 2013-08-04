@@ -640,12 +640,17 @@ sub command_mode
 
 sub command_topic
    : Command_description("Change the TOPIC")
-   : Command_arg('topic', eatall => 1)
+   : Command_arg('topic?', eatall => 1)
 {
    my $self = shift;
    my ( $topic ) = @_;
 
-   $self->topic( $topic );
+   if( length $topic ) {
+      $self->topic( $topic );
+   }
+   else {
+      $self->push_displayevent( "irc.topic_is", { channel => $self->get_prop_name, topic => $self->get_prop_topic } );
+   }
 
    return;
 }
@@ -918,7 +923,7 @@ sub make_widget_pre_scroller
    my $topicentry = $registry->construct(
       "Circle::Widget::Entry",
       classes => [qw( topic )],
-      on_enter => sub { $self->method_topic( $_[0] ) },
+      on_enter => sub { $self->topic( $_[0] ) },
    );
    $self->watch_property( "topic",
       on_updated => sub { $topicentry->set_prop_text( $_[1] ) }

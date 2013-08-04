@@ -9,7 +9,7 @@ use warnings;
 use base qw( Net::Async::Tangence::Server );
 IO::Async::Notifier->VERSION( '0.43' ); # ->loop
 
-our $VERSION = '0.131390';
+our $VERSION = '0.132150';
 
 use Carp;
 

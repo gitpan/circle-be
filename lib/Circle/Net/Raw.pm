@@ -303,7 +303,7 @@ sub load_configuration
    my $self = shift;
    my ( $ynode ) = @_;
 
-   $self->load_settings( $ynode, qw( host port echo ) );
+   $self->load_settings( $ynode );
 
    $self->load_rules_configuration( $ynode );
 }
@@ -313,7 +313,7 @@ sub store_configuration
    my $self = shift;
    my ( $ynode ) = @_;
 
-   $self->store_settings( $ynode, qw( host port echo ) );
+   $self->store_settings( $ynode );
 
    $self->store_rules_configuration( $ynode );
 }

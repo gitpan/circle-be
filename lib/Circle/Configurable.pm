@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
 
 package Circle::Configurable;
 
@@ -50,6 +50,14 @@ sub Setting_type :ATTR(CODE)
    exists $setting_types{$typename} or croak "Not a recognised type name '$typename'";
 
    return $setting_types{$typename};
+}
+
+sub Setting_default :ATTR(CODE)
+{
+   my $class = shift;
+   my ( $value ) = @_;
+
+   return $value;
 }
 
 sub _get_settings
@@ -177,11 +185,15 @@ sub get_configuration
 sub load_settings
 {
    my $self = shift;
-   my ( $ynode, @settings ) = @_;
+   my ( $ynode ) = @_;
 
-   foreach my $setting ( @settings ) {
+   foreach my $setting ( keys %{ $self->_get_settings } ) {
       my $cv = $self->can( "setting_$setting" ) or croak "$self has no setting $setting";
       my $value = $ynode->{$setting};
+      if( !defined $value and
+          defined( my $default = get_subattr( $cv, "Setting_default" ) ) ) {
+         $value = $default;
+      }
       $cv->( $self, $value ) if defined $value;
    }
 }
@@ -189,9 +201,9 @@ sub load_settings
 sub store_settings
 {
    my $self = shift;
-   my ( $ynode, @settings ) = @_;
+   my ( $ynode ) = @_;
 
-   foreach my $setting ( @settings ) {
+   foreach my $setting ( keys %{ $self->_get_settings } ) {
       my $cv = $self->can( "setting_$setting" ) or croak "$self has no setting $setting";
       my $value = $cv->( $self );
       $ynode->{$setting} = $value if defined $value;
