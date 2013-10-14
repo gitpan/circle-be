@@ -97,6 +97,14 @@ sub add_network
    return $newnet;
 }
 
+sub del_network
+{
+   my $self = shift;
+   my ( $network ) = @_;
+
+   $network->destroy;
+}
+
 use Circle::Collection
    name  => 'networks',
    storage => {
@@ -108,9 +116,9 @@ use Circle::Collection
 
       get => sub {
          my $self = shift;
-         my ( $key ) = @_;
-         my $network = $self->get_prop_networks->{$key} or return undef;
-         return { name => $key, type => $network->NETTYPE };
+         my ( $name ) = @_;
+         my $network = $self->get_prop_networks->{$name} or return undef;
+         return { name => $name, type => $network->NETTYPE };
       },
 
       add => sub {
@@ -125,7 +133,13 @@ use Circle::Collection
       },
 
       del => sub {
-         die "it might be in use\n";
+         my $self = shift;
+         my ( $name ) = @_;
+         my $network = $self->get_prop_networks->{$name} or return;
+
+         $network->connected and die "still connected\n";
+
+         $self->del_network( $network );
       },
 
    },

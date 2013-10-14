@@ -174,6 +174,12 @@ sub command_discon
    return;
 }
 
+sub connected
+{
+   my $self = shift;
+   defined $self->{conn};
+}
+
 sub command_close
    : Command_description("Disconnect and close the window")
 {

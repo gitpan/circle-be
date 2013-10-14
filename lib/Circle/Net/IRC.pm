@@ -23,7 +23,7 @@ use Circle::Rule::Store;
 use Circle::Widget::Box;
 use Circle::Widget::Label;
 
-use Net::Async::IRC;
+use Net::Async::IRC 0.07; # futures
 use IO::Async::Timer::Countdown;
 
 use Text::Balanced qw( extract_delimited );
@@ -282,18 +282,23 @@ sub connect
    my $host = $args{host};
    my $nick = $args{nick} || $self->get_prop_nick || $self->{configured_nick};
 
-   $irc->login( 
+   if( $args{SSL} and not eval { require IO::Async::SSL } ) {
+      return Future->new->fail( "SSL is set but IO::Async::SSL is not available" );
+   }
+
+   my $f = $irc->login(
       host    => $host,
       service => $args{port},
       nick    => $nick,
       user    => $args{ident},
       pass    => $args{pass},
 
+      extensions => $args{SSL} ? [qw( SSL )] : [],
+      SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE(),
+
       local_host => $args{local_host} || $self->{local_host},
 
       on_login => sub {
-         $args{on_login}->();
-
          foreach my $target ( values %{ $self->{channels} }, values %{ $self->{users} } ) {
             $target->on_connected;
          }
@@ -309,6 +314,10 @@ sub connect
    );
 
    $self->set_network_status( "connecting" );
+
+   $f->on_fail( sub { $self->set_network_status( "disconnected" ) } );
+
+   return $f;
 }
 
 sub connected
@@ -894,14 +903,16 @@ sub reconnect
    my $s = $self->{servers}->[ $self->{reconnect_host_idx}++ ];
    $self->{reconnect_host_idx} %= @{ $self->{servers} };
 
-   $self->connect(
+   my $f = $self->connect(
       host => $s->{host},
       port => $s->{port},
       user => $s->{user},
       pass => $s->{pass},
-      on_login => sub {},
-      on_error => sub { $self->enqueue_reconnect },
+      SSL  => $s->{SSL},
+      on_error => sub { warn "TODO: Empty closure" },
    );
+
+   $f->on_fail( sub { $self->enqueue_reconnect } );
 }
 
 sub on_ping_timeout
@@ -942,6 +953,9 @@ use Circle::Collection
       port  => { desc => "alternative port",
                  show => sub { $_ || "6667" },
                },
+      SSL   => { desc => "use SSL",
+                 show => sub { $_ ? "SSL" : "" },
+               },
       ident => { desc => "alternative ident",
                  show => sub { $_ || '$USER' },
                },
@@ -972,6 +986,7 @@ sub command_connect
    : Command_description("Connect to an IRC server")
    : Command_arg('host?')
    : Command_opt('port=$',  desc => "alternative port (default '6667')")
+   : Command_opt('SSL=+',   desc => "use SSL")
    : Command_opt('nick=$',  desc => "initial nick")
    : Command_opt('ident=$', desc => "alternative ident (default '\$USER')")
    : Command_opt('pass=$',  desc => "connection password")
@@ -1000,22 +1015,42 @@ sub command_connect
 
    $self->{reconnect_timer}->stop;
 
-   $self->connect( 
+   my $f = $self->connect(
       host => $host,
       nick => $opts->{nick},
       port => $opts->{port} || $s->{port},
+      SSL  => $opts->{SSL}  || $s->{SSL},
       user => $opts->{user} || $s->{user},
       pass => $opts->{pass} || $s->{pass},
       local_host => $opts->{local_host},
-      on_login => sub {
-         $cinv->respond( "Connected to $host", level => 1 );
-      },
-      on_error => sub {
-         $cinv->responderr( "Unable to connect to $host - $_[0]", level => 3 );
-      },
+      on_error => sub { warn "Empty closure" },
    );
 
+   $f->on_done( sub { $cinv->respond( "Connected to $host", level => 1 ) } );
+   $f->on_fail( sub { $cinv->responderr( "Unable to connect to $host - $_[0]", level => 3 ) } );
+
    return ( "Connecting to $host ..." );
+}
+
+sub command_reconnect
+   : Command_description("Disconnect then reconnect to the IRC server")
+   : Command_arg('message', eatall => 1)
+{
+   my $self = shift;
+   my ( $message ) = @_;
+
+   my $irc = $self->{irc};
+
+   $irc->send_message( "QUIT", undef, $message );
+
+   $irc->close;
+
+   $self->{no_reconnect_on_close} = 1;
+
+   $self->reconnect
+      ->on_done( sub { undef $self->{no_reconnect_on_close} });
+
+   return;
 }
 
 sub command_disconnect

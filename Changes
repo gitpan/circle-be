@@ -1,5 +1,12 @@
 Revision history for Circle
 
+0.132860  2013/10/14 15:00:44
+        [CHANGES]
+         * Connect IRC using Futures
+         * Allow networks to be deleted
+         * Support SSL
+         * Added /reconnect command to IRC
+
 0.132150 CHANGES:
          * Implement a /disconnect IRC command
          * Added /dumpevents and associated event log formatter
