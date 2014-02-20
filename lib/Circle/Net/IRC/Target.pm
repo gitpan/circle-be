@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::Target;
 
@@ -35,8 +35,12 @@ sub name
 use Scalar::Util qw( refaddr );
 use overload
 #   '""' => "STRING",
-   '+0' => sub { refaddr $_[0] },
+   '0+' => sub { refaddr $_[0] },
    fallback => 1;
+
+use constant PREFIX_OVERHEAD => 3;
+use constant PRIVMSG_OVERHEAD => length("PRIVMSG :");
+use constant CTCP_ACTION_OVERHEAD => length("PRIVMSG :\x01CTCP ACTION \x01");
 
 sub STRING
 {
@@ -196,6 +200,32 @@ sub on_disconnected
    $self->push_displayevent( "status", { text => $message } );
 }
 
+sub _split_text_chunks
+{
+   my ( $text, $maxlen, $on_chunk ) = @_;
+
+   my $head = "<< ";
+   my $tail = " >>";
+
+   while( length $text ) {
+      if( $maxlen >= length $text ) {
+         $on_chunk->( $text );
+         return;
+      }
+
+      my $prefix = substr $text, 0, $maxlen - length( $tail );
+      if( $prefix =~ m/\s+\S+$/ ) {
+         substr( $prefix, $-[0] ) = "";
+      }
+
+      $on_chunk->( $prefix . $tail );
+
+      substr( $text, 0, length $prefix ) = "";
+      $text =~ s/^\s+//;
+      substr( $text, 0, 0 ) = $head;
+   }
+}
+
 sub msg
 {
    my $self = shift;
@@ -213,12 +243,23 @@ sub msg
 
    my $is_action = $event->{is_action};
 
+   my $maxlen = 510 -
+      # To work out the maximum message length size we'd need to know our own
+      # prefix that the server will send. We can't know the host, but we know
+      # everything else. Just pretend it's maximal length, 64
+      ( length( $irc->{nick} ) + length( $irc->{user} ) + 64 + PREFIX_OVERHEAD );
+   my $target = $self->name;
+
    foreach my $line ( split m/\n/, $event->{text}->str ) {
       if( $is_action ) {
-         $irc->send_ctcp( undef, $self->name, "ACTION", $line );
+         _split_text_chunks( $line, $maxlen - length($target) - CTCP_ACTION_OVERHEAD, sub {
+            $irc->send_ctcp( undef, $target, "ACTION", $_[0] );
+         });
       }
       else {
-         $irc->send_message( "PRIVMSG", undef, $self->name, $line );
+         _split_text_chunks( $line, $maxlen - length($target) - PRIVMSG_OVERHEAD, sub {
+            $irc->send_message( "PRIVMSG", undef, $target, $_[0] );
+         });
       }
 
       my $line_formatted = $net->format_text( $line );

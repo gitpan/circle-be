@@ -26,6 +26,8 @@ class Circle.RootObj {
 
 class Circle.Session.Tabbed {
   prop tabs = array of obj;
+
+  event raise_item(obj);
 }
 
 class Circle.Net.IRC {

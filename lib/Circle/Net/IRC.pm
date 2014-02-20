@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC;
 
@@ -23,7 +23,7 @@ use Circle::Rule::Store;
 use Circle::Widget::Box;
 use Circle::Widget::Label;
 
-use Net::Async::IRC 0.07; # futures
+use Net::Async::IRC 0.09; # IaStream subclass
 use IO::Async::Timer::Countdown;
 
 use Text::Balanced qw( extract_delimited );
@@ -66,7 +66,6 @@ sub new
          $self->on_ping_reply( $lag );
       },
    );
-   $loop->add( $irc );
 
    weaken( my $weakself = $self );
    $self->{reconnect_timer} = IO::Async::Timer::Countdown->new(
@@ -286,6 +285,7 @@ sub connect
       return Future->new->fail( "SSL is set but IO::Async::SSL is not available" );
    }
 
+   $self->{loop}->add( $irc ) if !$irc->loop;
    my $f = $irc->login(
       host    => $host,
       service => $args{port},
@@ -293,8 +293,10 @@ sub connect
       user    => $args{ident},
       pass    => $args{pass},
 
-      extensions => $args{SSL} ? [qw( SSL )] : [],
-      SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE(),
+      ( $args{SSL} ? (
+         extensions => [qw( SSL )],
+         SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE(),
+      ) : () ),
 
       local_host => $args{local_host} || $self->{local_host},
 
@@ -861,6 +863,17 @@ sub on_message_RPL_NOWAWAY
    return 1;
 }
 
+sub on_message_whois
+{
+   my $self = shift;
+   my ( $message, $hints ) = @_;
+
+   my $f = delete $self->{whois_gate_f}{$hints->{target_name_folded}}
+      or return 1;
+
+   $f->done( $hints->{whois} );
+}
+
 sub on_closed
 {
    my $self = shift;
@@ -894,6 +907,8 @@ sub enqueue_reconnect
    my $timer = $self->{reconnect_timer};
    $timer->configure( delay => $delay );
    $timer->start;
+
+   $self->set_network_status( "reconnect pending..." );
 }
 
 sub reconnect
@@ -1016,12 +1031,12 @@ sub command_connect
    $self->{reconnect_timer}->stop;
 
    my $f = $self->connect(
-      host => $host,
-      nick => $opts->{nick},
-      port => $opts->{port} || $s->{port},
-      SSL  => $opts->{SSL}  || $s->{SSL},
-      user => $opts->{user} || $s->{user},
-      pass => $opts->{pass} || $s->{pass},
+      host  => $host,
+      nick  => $opts->{nick},
+      port  => $opts->{port}  || $s->{port},
+      SSL   => $opts->{SSL}   || $s->{SSL},
+      ident => $opts->{ident} || $s->{ident},
+      pass  => $opts->{pass}  || $s->{pass},
       local_host => $opts->{local_host},
       on_error => sub { warn "Empty closure" },
    );
@@ -1055,17 +1070,24 @@ sub command_reconnect
 
 sub command_disconnect
    : Command_description("Disconnect from the IRC server")
-   : Command_arg('message', eatall => 1)
+   : Command_arg('message?', eatall => 1)
 {
    my $self = shift;
    my ( $message ) = @_;
 
    my $irc = $self->{irc};
 
-   $irc->send_message( "QUIT", undef, $message );
-   $irc->close;
+   if( $irc->read_handle ) {
+      $irc->send_message( "QUIT", undef, defined $message ? ( $message ) : () );
+      $irc->close;
 
-   $self->{no_reconnect_on_close} = 1;
+      $self->{no_reconnect_on_close} = 1;
+   }
+   else {
+      my $timer = $self->{reconnect_timer};
+      $timer->stop if $timer->is_running;
+      $self->set_network_status( "disconnected" );
+   }
 
    return;
 }
@@ -1218,6 +1240,43 @@ sub command_unaway
    $irc->send_message( "AWAY", undef );
 
    return;
+}
+
+sub command_whois
+   : Command_description("Send a WHOIS query")
+   : Command_arg('user')
+{
+   my $self = shift;
+   my ( $user, $cinv ) = @_;
+
+   my $irc = $self->{irc};
+   my $user_folded = $irc->casefold_name( $user );
+
+   $irc->send_message( "WHOIS", undef, $user );
+
+   my $f = ( $self->{whois_gate_f}{$user_folded} ||= Future->new );
+   $f->on_done( sub {
+      my ( $data ) = @_;
+
+      $cinv->respond( "WHOIS $user:" );
+      foreach my $datum ( @$data ) {
+         my %d = %$datum;
+         my $whois = delete $d{whois};
+
+         $cinv->respond( " $whois - " . join( " ",
+            map { my $val = $d{$_};
+                  # 'channels' comes as an ARRAY
+                  ref($val) eq "ARRAY" ? "$_=@{$d{$_}}" : "$_=$d{$_}"
+                } sort keys %d
+         ) );
+      }
+   });
+   $f->on_fail( sub {
+      my ( $failure ) = @_;
+      $cinv->responderr( "Cannot WHOIS $user - $failure" );
+   });
+
+   return ();
 }
 
 use Circle::Collection

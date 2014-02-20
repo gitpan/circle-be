@@ -92,4 +92,6 @@ $SIG{__WARN__} = sub {
    $circle->warn( @_ );
 };
 
+$SIG{PIPE} = sub { die "DIE() on SIGPIPE" };
+
 $loop->loop_forever;

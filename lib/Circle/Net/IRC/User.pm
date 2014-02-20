@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Net::IRC::User;
 
@@ -27,9 +27,8 @@ sub on_message
    my $self = shift;
    my ( $command, $message, $hints ) = @_;
 
-   # Numerics come from the server; real commands come from the user
-   if( $command !~ m/^(\d+)$/ ) {
-      my $ident    = $hints->{prefix_user};
+   # Messages from the user will have a prefix_user hint, server messages will not.
+   if( defined( my $ident = $hints->{prefix_user} ) ) {
       my $hostname = $hints->{prefix_host};
 
       $self->update_ident( "$ident\@$hostname" );
@@ -121,12 +120,54 @@ sub on_message_RPL_AWAY
    return 1;
 }
 
+# Send it back
+sub on_message_whois
+{
+   my $self = shift;
+   my ( $message, $hints ) = @_;
+
+   my $net = $self->{net};
+   $net->on_message_whois( $message, $hints );
+}
+
 sub command_close
    : Command_description("Close the window")
 {
    my $self = shift;
 
    $self->destroy;
+}
+
+sub command_requery
+   : Command_description("Change the target nick for this user query")
+   : Command_arg('newnick')
+{
+   my $self = shift;
+   my ( $newnick ) = @_;
+
+   my $oldnick = $self->name;
+
+   $self->set_prop_name( $newnick );
+   $self->set_prop_tag( $newnick );
+
+   my $oldnick_folded = $self->{irc}->casefold_name( $oldnick );
+   my $newnick_folded = $self->{irc}->casefold_name( $newnick );
+
+   $self->fire_event( "change_nick", $oldnick, $oldnick_folded, $newnick, $newnick_folded );
+
+   return ( "Now talking to $newnick" );
+}
+
+sub command_whois
+   : Command_description("Send a WHOIS query")
+   : Command_arg('user?')
+{
+   my $self = shift;
+   my ( $user, $cinv ) = @_;
+
+   $user //= $self->name;
+
+   $self->{net}->command_whois( $user, $cinv );
 }
 
 sub make_widget_pre_scroller

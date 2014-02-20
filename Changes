@@ -1,5 +1,17 @@
 Revision history for Circle
 
+0.140500  2014/02/20 15:02:21
+        [CHANGES]
+         * Make IRC /disconnect message optional
+         * Added /whois, /requery
+         * Added overlong PRIVMSG splitting over multiple messages
+
+        [BUGFIXES]
+         * Don't try to look up IO::Socket::SSL::SSL_VERIFY_NONE when
+           IO::Socket::SSL may not be loaded
+         * IRC network connect with alternate ident now obeys it
+         * NaIRC 0.09 is now a regular Stream, not a Protocol
+
 0.132860  2013/10/14 15:00:44
         [CHANGES]
          * Connect IRC using Futures
