@@ -3,19 +3,19 @@ abstract: 'server backend for the C<Circle> application host'
 author:
   - 'Paul Evans <leonerd@leonerd.org.uk>'
 build_requires:
-  Test::Identity: 0
-  Test::More: 0
+  Test::Identity: '0'
+  Test::More: '0'
 dynamic_config: 1
-generated_by: 'Module::Build version 0.4203, CPAN::Meta::Converter version 2.133380'
+generated_by: 'Module::Build version 0.4206, CPAN::Meta::Converter version 2.142060'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: circle-be
 provides:
   Circle:
     file: lib/Circle.pm
-    version: 0.140500
+    version: '0.142470'
   Circle::Collection:
     file: lib/Circle/Collection.pm
   Circle::Command:
@@ -28,6 +28,8 @@ provides:
     file: lib/Circle/Configurable.pm
   Circle::GlobalRules:
     file: lib/Circle/GlobalRules.pm
+  Circle::Loggable:
+    file: lib/Circle/Loggable.pm
   Circle::Net::IRC:
     file: lib/Circle/Net/IRC.pm
   Circle::Net::IRC::Channel:
@@ -67,18 +69,24 @@ provides:
   Circle::WindowItem:
     file: lib/Circle/WindowItem.pm
 requires:
-  Attribute::Storage: 0.05
-  Data::Dump: 0
-  File::ShareDir: 1.00
-  IO::Async::Loop: 0.37
-  IO::Async::Notifier: 0.43
-  Net::Async::IRC: 0.09
-  Net::Async::Tangence::Server: 0
-  String::Tagged: 0
-  Tangence::Message: 0.11
-  Tangence::Object: 0.18
-  YAML: 0
-  perl: 5.010
+  Attribute::Storage: '0.09'
+  Class::Method::Modifiers: '0'
+  Data::Dump: '0'
+  File::Basename: '0'
+  File::Path: '0'
+  File::ShareDir: '1.00'
+  IO::Async::Loop: '0.37'
+  IO::Async::Notifier: '0.43'
+  Module::Pluggable: '4.1'
+  Net::Async::IRC: '0.09'
+  Net::Async::Tangence::Server: '0.12'
+  String::Tagged: '0'
+  Struct::Dumb: '0'
+  Tangence::Message: '0.11'
+  Tangence::Object: '0.18'
+  Tangence::Registry: '0.20'
+  YAML: '0'
+  perl: '5.010'
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.140500
+version: '0.142470'

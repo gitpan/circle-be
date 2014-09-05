@@ -2,6 +2,7 @@ bin/circle-be
 bin/circle-parse-eventdump
 Build.PL
 Changes
+circle-be
 lib/Circle.pm
 lib/Circle/Collection.pm
 lib/Circle/Command.pm
@@ -9,6 +10,7 @@ lib/Circle/Commandable.pm
 lib/Circle/CommandInvocation.pm
 lib/Circle/Configurable.pm
 lib/Circle/GlobalRules.pm
+lib/Circle/Loggable.pm
 lib/Circle/Net/IRC.pm
 lib/Circle/Net/IRC/Channel.pm
 lib/Circle/Net/IRC/Target.pm

@@ -20,7 +20,8 @@ sub new
    $self->set_prop_name( $args{name} );
    $self->set_prop_tag( $args{name} );
 
-   $self->{net} = $args{net};
+   $self->{root} = $args{root};
+   $self->{net}  = $args{net};
 
    return $self;
 }
@@ -74,7 +75,7 @@ sub reify
 
    $self->set_prop_real( 1 );
 
-   my $root = $self->{net}->{root};
+   my $root = $self->{root};
    $root->broadcast_sessions( "new_item", $self );
 }
 
@@ -338,7 +339,7 @@ sub enumerable_name
    return $self->get_prop_tag;
 }
 
-sub enumerable_parent
+sub parent
 {
    my $self = shift;
    return $self->{net};

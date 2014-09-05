@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Configurable;
 
@@ -11,7 +11,9 @@ use base qw( Circle::Commandable );
 
 use Carp;
 
-use Attribute::Storage qw( get_subattr get_subattrs );
+use Attribute::Storage qw( get_subattr get_subattrs apply_subattrs_for_pkg find_subs_with_attr );
+use Data::Dump qw( pp );
+require mro;
 
 #############################################
 ### Attribute handlers for setting_* subs ###
@@ -60,20 +62,85 @@ sub Setting_default :ATTR(CODE)
    return $value;
 }
 
+sub Setting_inheritable :ATTR(CODE)
+{
+   return 1;
+}
+
+sub APPLY_Setting
+{
+   my $class = shift;
+   my ( $name, %args ) = @_;
+
+   my $storage = $args{storage} || $name;
+
+   no strict 'refs';
+   *{"${class}::setting_$name"} = apply_subattrs_for_pkg $class,
+      Setting_description => qq("\Q$args{description}\E"),
+      Setting_type        => qq("\Q$args{type}\E"),
+      ( exists $args{default} ?
+         ( Setting_default => pp($args{default}) ) : () ),
+      sub {
+         my $self = shift;
+         my ( $newvalue ) = @_;
+
+         $self->{$storage} = $newvalue if @_;
+         return $self->{$storage};
+      };
+}
+
+sub APPLY_Inheritable_Setting
+{
+   my $class = shift;
+   my ( $name, %args ) = @_;
+
+   my $storage = $args{storage} || $name;
+
+   my $setting = "setting_$name";
+
+   no strict 'refs';
+   *{"${class}::setting_$name"} = apply_subattrs_for_pkg $class,
+      Setting_description => qq("\Q$args{description}\E"),
+      Setting_type        => qq("\Q$args{type}\E"),
+      Setting_inheritable => qq(),
+      ( exists $args{default} ?
+         ( Setting_default => pp($args{default}) ) : () ),
+      sub {
+         my $self = shift;
+         my ( $newvalue ) = @_;
+
+         $self->{$storage} = $newvalue if @_;
+         return $self->{$storage} if defined $self->{$storage};
+         if( my $parent = $self->parent ) {
+            return $parent->$setting;
+         }
+         else {
+            return undef;
+         }
+      };
+   *{"${class}::_setting_${name}_inherits"} = sub {
+      my $self = shift;
+      return $self->parent && !defined $self->{$storage};
+   };
+}
+
 sub _get_settings
 {
    my $self = shift;
 
    my $class = ref $self || $self;
 
+   my %subs = find_subs_with_attr( mro::get_linear_isa( $class ), "Setting_description",
+      matching => qr/^setting_/
+   );
+
    my %settings;
+   foreach my $name ( keys %subs ) {
+      ( my $settingname = $name ) =~ s/^setting_//;
+      my $cv = $subs{$name};
 
-   no strict 'refs';
-   foreach my $name ( keys %{$class."::"} ) {
-      ( my $settingname = $name ) =~ s/^setting_// or next;
-
-      my $cv = $class->can( $name ) or next;
-      $settings{$settingname} = get_subattrs( $cv );
+      my $attrs = $settings{$settingname} = get_subattrs( $cv );
+      m/^Setting_(.*)$/ and $attrs->{$1} = delete $attrs->{$_} for keys %$attrs;
    }
 
    return \%settings;
@@ -83,14 +150,16 @@ sub command_set
    : Command_description("Display or manipulate configuration settings")
    : Command_arg('setting?')
    : Command_arg('value?')
-   : Command_opt('help=+',   desc => "Display help on setting(s)")
-   : Command_opt('values=+', desc => "Display value of each setting")
+   : Command_opt('inherit=+', desc => "Inherit value from parent")
+   : Command_opt('help=+',    desc => "Display help on setting(s)")
+   : Command_opt('values=+',  desc => "Display value of each setting")
 {
    my $self = shift;
    my ( $setting, $newvalue, $opts, $cinv ) = @_;
 
-   my $opt_help   = $opts->{help};
-   my $opt_values = $opts->{values};
+   my $opt_inherit = $opts->{inherit};
+   my $opt_help    = $opts->{help};
+   my $opt_values  = $opts->{values};
 
    if( !defined $setting ) {
       my $settings = $self->_get_settings;
@@ -100,11 +169,21 @@ sub command_set
       if( $opt_values ) {
          my @table;
          foreach my $settingname ( sort keys %$settings ) {
+            $setting = $settings->{$settingname};
+
             my $curvalue = $self->can( "setting_$settingname" )->( $self );
             if( $setting->{type}->{print} ) {
-               $curvalue = $setting->{type}->{print}->( $curvalue );
+               $curvalue = $setting->{type}->{print}->( local $_ = $curvalue );
             }
-            push @table, [ $settingname, defined $curvalue ? $curvalue : "" ];
+
+            if( $setting->{inheritable} && $self->can( "_setting_${settingname}_inherits" )->( $self ) ) {
+               $settingname .= " [I]";
+            }
+
+            push @table, [
+               $settingname,
+               ( defined $curvalue ? $curvalue : "" ),
+            ];
          }
 
          $self->respond_table( \@table, colsep => ": ", headings => [ "Setting", "Value" ] );
@@ -138,19 +217,20 @@ sub command_set
    my $type = get_subattr( $cv, 'Setting_type' );
 
    my $curvalue;
-   if( defined $newvalue ) {
-      if( $type->{check} ) {
+   if( defined $newvalue or $opt_inherit ) {
+      if( !$opt_inherit and $type->{check} ) {
          local $_ = $newvalue;
          $type->{check}->( $newvalue ) or
             $cinv->responderr( "'$newvalue' is not a valid value for $setting" ), return;
       }
 
-      if( $type->{parse} ) {
+      if( !$opt_inherit and $type->{parse} ) {
          local $_ = $newvalue;
          eval { $newvalue = $type->{parse}->( $newvalue ); 1 } or
             $cinv->responderr( "'$newvalue' is not a valid value for $setting" ), return;
       }
 
+      undef $newvalue if $opt_inherit;
       $curvalue = $cv->( $self, $newvalue );
    }
    else {
@@ -159,7 +239,7 @@ sub command_set
 
    if( $type->{print} ) {
       local $_ = $curvalue;
-      $curvalue = $type->{print}->( $curvalue );
+      $curvalue = $type->{print}->( local $_ = $curvalue );
    }
 
    if( defined $curvalue ) {
@@ -182,7 +262,7 @@ sub get_configuration
    return $ynode;
 }
 
-sub load_settings
+sub load_configuration
 {
    my $self = shift;
    my ( $ynode ) = @_;
@@ -198,7 +278,7 @@ sub load_settings
    }
 }
 
-sub store_settings
+sub store_configuration
 {
    my $self = shift;
    my ( $ynode ) = @_;

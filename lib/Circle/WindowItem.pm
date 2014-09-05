@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2013 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::WindowItem;
 
@@ -14,7 +14,7 @@ use warnings;
 
 use Carp;
 
-use base qw( Circle::Commandable );
+use base qw( Circle::Commandable Circle::Configurable Circle::Loggable );
 
 use Circle::TaggedString;
 
@@ -46,7 +46,7 @@ sub method_reset_level
 sub push_displayevent
 {
    my $self = shift;
-   my ( $event, $args ) = @_;
+   my ( $event, $args, %opts ) = @_;
 
    foreach ( values %$args ) {
       if( !ref $_ ) { 
@@ -60,8 +60,12 @@ sub push_displayevent
       }
    }
 
+   my $time = $opts{time} // time();
+
    my $scroller = $self->get_widget_scroller;
-   $scroller->push_event( $event, $args );
+   $scroller->push_event( $event, $time, $args );
+
+   $self->push_log( $event, $time, $args );
 }
 
 sub respond
@@ -227,6 +231,18 @@ sub get_widget_scroller
    );
 
    return $self->{widget_displayevents} = $widget;
+}
+
+sub enumerable_path
+{
+   my $self = shift;
+
+   if( my $parent = $self->parent ) {
+      return $parent->enumerable_path . "/" . $self->enumerable_name;
+   }
+   else {
+      return $self->enumerable_name;
+   }
 }
 
 0x55AA;

@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Collection;
 
@@ -9,6 +9,9 @@ use warnings;
 
 use Carp;
 require attributes;
+
+use Attribute::Storage qw( apply_subattrs_for_pkg );
+use Class::Method::Modifiers qw( install_modifier );
 
 # A template role to merge
 sub import
@@ -27,6 +30,7 @@ sub import
    my $desc1 = $args{desc_single} || do { $_ = $name; s/s$//; $_ };
 
    my $storage = $args{storage} or croak "Need a storage type";
+   my $config  = $args{config};
 
    # Now parse it down to several fields
    my @attrs_all;
@@ -67,44 +71,36 @@ sub import
       $method_del  = "${name}_del";
    }
    elsif( $storage eq "array" ) {
-      $method_list = _mksub( $caller,
-         sub { 
-            my $self = shift;
-            return @{ $self->{$name} }
-         }
-      );
+      $method_list = sub {
+         my $self = shift;
+         return @{ $self->{$name} }
+      };
 
-      $method_get = _mksub( $caller,
-         sub {
-            my $self = shift;
-            my ( $key ) = @_;
-            return ( grep { $_->{$keyattr} eq $key } @{ $self->{$name} } )[0];
-         }
-      );
+      $method_get = sub {
+         my $self = shift;
+         my ( $key ) = @_;
+         return ( grep { $_->{$keyattr} eq $key } @{ $self->{$name} } )[0];
+      };
 
-      $method_add = _mksub( $caller,
-         sub {
-            my $self = shift;
-            my ( $key, $item ) = @_;
-            # TODO: something with key
-            push @{ $self->{$name} }, $item;
-         }
-      );
+      $method_add = sub {
+         my $self = shift;
+         my ( $key, $item ) = @_;
+         # TODO: something with key
+         push @{ $self->{$name} }, $item;
+      };
 
-      $method_del = _mksub( $caller,
-         sub {
-            my $self = shift;
-            my ( $key, $item ) = @_;
+      $method_del = sub {
+         my $self = shift;
+         my ( $key, $item ) = @_;
 
-            my $items = $self->{$name};
-            my ( $idx ) = grep { $items->[$_] == $item } 0 .. $#$items;
+         my $items = $self->{$name};
+         my ( $idx ) = grep { $items->[$_] == $item } 0 .. $#$items;
 
-            return 0 unless defined $idx;
+         return 0 unless defined $idx;
 
-            splice @$items, $idx, 1, ();
-            return 1;
-         }
-      );
+         splice @$items, $idx, 1, ();
+         return 1;
+      };
    }
    else {
       croak "Unrecognised storage type $storage";
@@ -115,7 +111,7 @@ sub import
    unless( exists $commands{list} ) {
       defined $method_list or croak "No list method defined for list subcommand";
 
-      $commands{list} = _mksub( $caller,
+      $commands{list} = apply_subattrs_for_pkg( $caller,
          Command_description => qq("List the $desc2"),
          Command_subof       => qq('$name'),
          Command_default     => qq(),
@@ -166,11 +162,11 @@ sub import
    unless( exists $commands{add} ) {
       defined $method_add or croak "No add method defined for add subcommand";
 
-      $commands{add} = _mksub( $caller,
+      $commands{add} = apply_subattrs_for_pkg( $caller,
          Command_description => qq("Add a $desc1"),
          Command_subof       => qq('$name'),
          Command_arg         => qq('$keyattr'),
-         Command_opt         => \@opts_add,
+         ( map { +Command_opt => $_ } @opts_add ),
          sub {
             my $self = shift;
             my ( $key, $opts, $cinv ) = @_;
@@ -200,11 +196,11 @@ sub import
    unless( exists $commands{mod} ) {
       defined $method_get or croak "No get method defined for mod subcommand";
 
-      $commands{mod} = _mksub( $caller,
+      $commands{mod} = apply_subattrs_for_pkg( $caller,
          Command_description => qq("Modify an existing $desc1"),
          Command_subof       => qq('$name'),
          Command_arg         => qq('$keyattr'),
-         Command_opt         => \@opts_mod,
+         ( map { +Command_opt => $_ } @opts_mod ),
          sub {
             my $self = shift;
             my ( $key, $opts, $cinv ) = @_;
@@ -236,7 +232,7 @@ sub import
    unless( exists $commands{del} ) {
       defined $method_del or croak "No del method defined for del subcommand";
 
-      $commands{del} = _mksub( $caller,
+      $commands{del} = apply_subattrs_for_pkg( $caller,
          Command_description => qq("Delete a $desc1"),
          Command_subof       => qq('$name'),
          Command_arg         => qq('$keyattr'),
@@ -270,60 +266,72 @@ sub import
    my %subs;
    $subs{"command_${name}_$_"} = $commands{$_} for keys %commands;
 
-   $subs{"command_${name}"} = _mksub( $caller,
+   $subs{"command_${name}"} = apply_subattrs_for_pkg( $caller,
       Command_description => qq("Display or manipulate $desc2"),
       # body matters not but it needs to be a cloned closure
       do { my $dummy; sub { undef $dummy } }
-   );
-
-   # Configuration load/store
-
-   $subs{"load_${name}_configuration"} = _mksub( $caller,
-      sub {
-         my $self = shift;
-         my ( $ynode ) = @_;
-
-         foreach my $n ( @{ $ynode->{$name} } ) {
-            my $item = {};
-            $item->{$_} = $n->{$_} for @attrs_persisted;
-
-            $self->$method_add( $item->{$keyattr}, $item );
-         }
-      }
-   );
-
-   $subs{"store_${name}_configuration"} = _mksub( $caller,
-      sub {
-         my $self = shift;
-         my ( $ynode ) = @_;
-
-         $ynode->{$name} = \my @itemconfs;
-
-         foreach my $item ( $self->$method_list ) {
-            push @itemconfs, my $n = YAML::Node->new({});
-            defined $item->{$_} and $n->{$_} = $item->{$_} for @attrs_persisted;
-         }
-      }
    );
 
    {
       no strict 'refs';
       *{"${caller}::$_"} = $subs{$_} for keys %subs;
    }
-}
 
-sub _mksub
-{
-   my $caller = shift;
-   my $code = pop;
-   my %attrs = @_;
+   if( !defined $config or $config ) {
+      my $config_type = $config->{type} || "array";
+      my $type_array = $config_type eq "array";
+      my $type_hash  = $config_type eq "hash";
+      $type_array or $type_hash or
+         die "Expected config type either 'array' or 'hash'";
 
-   foreach my $attr ( keys %attrs ) {
-      my $value = $attrs{$attr};
-      attributes->import( $caller, $code, "$attr($_)" ) for ref $value ? @$value : ( $value );
+      # Optional config-related methods
+      my $method_store = $config->{store};
+      my $method_load  = $config->{load};
+
+      # Configuration load/store
+      install_modifier $caller, after => load_configuration => sub {
+         my $self = shift;
+         my ( $ynode ) = @_;
+
+         my $ynodes = $ynode->{$name} or return;
+
+         foreach my $this ( $type_array ? @$ynodes : keys %$ynodes ) {
+            my $item = {};
+            my $n = $type_array ? $this : $ynodes->{$this};
+
+            $item->{$_} = $n->{$_} for @attrs_persisted;
+            $item->{$keyattr} = $this if $type_hash;
+
+            $self->$method_add( $item->{$keyattr}, $item );
+
+            if( ref $method_load or $method_load && $self->can( $method_load ) ) {
+               $self->$method_load( $item->{$keyattr}, $n );
+            }
+         }
+      };
+
+      install_modifier $caller, after => store_configuration => sub {
+         my $self = shift;
+         my ( $ynode ) = @_;
+
+         my $ynodes = $ynode->{$name} ||= $type_array ? [] : YAML::Node->new({});
+         $type_array ? ( @$ynodes = () ) : ( %$ynodes = () );
+
+         foreach my $item ( $self->$method_list ) {
+            my $n = YAML::Node->new({});
+
+            defined $item->{$_} and $n->{$_} = $item->{$_} for @attrs_persisted;
+
+            if( ref $method_store or $method_store && $self->can( $method_store ) ) {
+               $self->$method_store( $item->{$keyattr}, $n );
+            }
+
+            $type_array ?
+               ( push @$ynodes, $n ) :
+               do { $ynodes->{$n->{$keyattr}} = $n; delete $n->{$keyattr} };
+         }
+      };
    }
-
-   return $code;
 }
 
 0x55AA;

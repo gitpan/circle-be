@@ -1,5 +1,16 @@
 Revision history for Circle
 
+0.142470  2014/09/05 17:46:57
+        [CHANGES]
+         * Added a logging system
+         * Rebuilt the Circle::Configurable subsystem, allows inheritable
+           settings
+         * Support late-loading of Tangence::Class definitions of Circle::Net,
+           subclasses thus paving the way for out-of-tree network types
+
+        [BUGFIXES]
+         * Make unit tests work again on latest NaTangence
+
 0.140500  2014/02/20 15:02:21
         [CHANGES]
          * Make IRC /disconnect message optional

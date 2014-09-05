@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Ruleable;
 
@@ -181,38 +181,42 @@ sub command_rules_describe
    return;
 }
 
-sub load_rules_configuration
+use Class::Method::Modifiers qw( install_modifier );
+sub APPLY_Ruleable
 {
-   my $self = shift;
-   my ( $ynode ) = @_;
+   my $caller = caller;
 
-   return unless my $rules_ynode = $ynode->{rules};
-   my $rulestore = $self->{rulestore};
+   install_modifier $caller, after => load_configuration => sub {
+      my $self = shift;
+      my ( $ynode ) = @_;
 
-   foreach my $chain ( keys %$rules_ynode ) {
-      my $chain_ynode = $rules_ynode->{$chain};
-      my $chain = $rulestore->new_chain( $chain ); # or fetch the existing one
-      $chain->clear;
-      $chain->append_rule( $_ ) for @$chain_ynode;
-   }
-}
+      return unless my $rules_ynode = $ynode->{rules};
+      my $rulestore = $self->{rulestore};
 
-sub store_rules_configuration
-{
-   my $self = shift;
-   my ( $ynode ) = @_;
+      foreach my $chain ( keys %$rules_ynode ) {
+         my $chain_ynode = $rules_ynode->{$chain};
+         my $chain = $rulestore->new_chain( $chain ); # or fetch the existing one
+         $chain->clear;
+         $chain->append_rule( $_ ) for @$chain_ynode;
+      }
+   };
 
-   my $rulestore = $self->{rulestore};
-   my $rules_ynode = $ynode->{rules} ||= YAML::Node->new({});
+   install_modifier $caller, after => store_configuration => sub {
+      my $self = shift;
+      my ( $ynode ) = @_;
 
-   foreach my $chain ( $rulestore->chains ) {
-      my $chain_ynode = $rules_ynode->{$chain} = [
-         $rulestore->get_chain( $chain )->deparse_rules(),
-      ];
-   }
+      my $rulestore = $self->{rulestore};
+      my $rules_ynode = $ynode->{rules} ||= YAML::Node->new({});
 
-   # Delete any of the old ones
-   $rulestore->get_chain( $_ ) or delete $rules_ynode->{$_} for keys %$rules_ynode;
+      foreach my $chain ( $rulestore->chains ) {
+         my $chain_ynode = $rules_ynode->{$chain} = [
+            $rulestore->get_chain( $chain )->deparse_rules(),
+         ];
+      }
+
+      # Delete any of the old ones
+      $rulestore->get_chain( $_ ) or delete $rules_ynode->{$_} for keys %$rules_ynode;
+   };
 }
 
 0x55AA;

@@ -7,7 +7,8 @@ package Circle::Net::IRC;
 use strict;
 use warnings;
 
-use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable Circle::Configurable );
+use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable );
+__PACKAGE__->APPLY_Ruleable;
 
 use base qw( Circle::Rule::Store ); # for the attributes
 
@@ -157,8 +158,9 @@ sub get_channel_or_create
    my $registry = $self->{registry};
    my $chanobj = $registry->construct(
       "Circle::Net::IRC::Channel",
-      net => $self,
-      irc => $irc,
+      root => $self->{root},
+      net  => $self,
+      irc  => $irc,
       name => $channame,
    );
 
@@ -206,8 +208,9 @@ sub get_user_or_create
    my $registry = $self->{registry};
    my $userobj = $registry->construct(
       "Circle::Net::IRC::User",
-      net => $self,
-      irc => $irc,
+      root => $self->{root},
+      net  => $self,
+      irc  => $irc,
       name => $nick,
    );
 
@@ -1359,7 +1362,7 @@ sub enumerable_name
    return $self->get_prop_tag;
 }
 
-sub enumerable_parent
+sub parent
 {
    my $self = shift;
    return $self->{root};
@@ -1391,67 +1394,22 @@ sub get_item
    return undef;
 }
 
-sub setting_local_host
-   : Setting_description("Local bind address")
-   : Setting_type('str')
-{
-   my $self = shift;
-   my ( $newvalue ) = @_;
+__PACKAGE__->APPLY_Setting( local_host =>
+   description => "Local bind address",
+   type        => 'str',
+);
 
-   $self->{local_host} = $newvalue if @_;
-   return $self->{local_host};
-}
+__PACKAGE__->APPLY_Setting( nick =>
+   description => "Initial connection nick",
+   type        => 'str',
+   storage     => 'configured_nick',
+);
 
-sub setting_nick
-   : Setting_description("Initial connection nick")
-   : Setting_type('str')
-{
-   my $self = shift;
-   my ( $newvalue ) = @_;
-
-   $self->{configured_nick} = $newvalue if defined $newvalue;
-   return $self->{configured_nick};
-}
-
-sub setting_use_mirc_colours
-   : Setting_description("Use mIRC colouring information")
-   : Setting_type('bool')
-   : Setting_default(1)
-{
-   my $self = shift;
-   my ( $newvalue ) = @_;
-
-   $self->{use_mirc_colours} = $newvalue if defined $newvalue;
-   return $self->{use_mirc_colours};
-}
-
-sub load_configuration
-{
-   my $self = shift;
-   my ( $ynode ) = @_;
-
-   $self->load_settings( $ynode );
-
-   $self->load_servers_configuration( $ynode );
-
-   $self->load_channels_configuration( $ynode );
-
-   $self->load_rules_configuration( $ynode );
-}
-
-sub store_configuration
-{
-   my $self = shift;
-   my ( $ynode ) = @_;
-
-   $self->store_settings( $ynode );
-
-   $self->store_servers_configuration( $ynode );
-
-   $self->store_channels_configuration( $ynode );
-
-   $self->store_rules_configuration( $ynode );
-}
+__PACKAGE__->APPLY_Setting( use_mirc_colours =>
+   description => "Use mIRC colouring information",
+   type        => 'bool',
+   default     => 1,
+);
 
 ###
 # Widgets

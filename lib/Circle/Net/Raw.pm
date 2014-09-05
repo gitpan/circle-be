@@ -7,7 +7,8 @@ package Circle::Net::Raw;
 use strict;
 use warnings;
 
-use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable Circle::Configurable );
+use base qw( Tangence::Object Circle::WindowItem Circle::Ruleable );
+__PACKAGE__->APPLY_Ruleable;
 
 use constant NETTYPE => 'raw';
 
@@ -263,66 +264,26 @@ sub enumerable_name
    return $self->get_prop_tag;
 }
 
-sub enumerable_parent
+sub parent
 {
    my $self = shift;
    return $self->{root};
 }
 
-### Settings
+__PACKAGE__->APPLY_Setting( host =>
+   description => "Hostname of the server",
+   type        => 'str',
+);
 
-sub setting_host
-   : Setting_description("Hostname of the server")
-   : Setting_type('str')
-{
-   my $self = shift;
-   my ( $newvalue ) = @_;
+__PACKAGE__->APPLY_Setting( port =>
+   description => "Port number of the server",
+   type        => 'int',
+);
 
-   $self->{host} = $newvalue if defined $newvalue;
-   return $self->{host};
-}
-
-sub setting_port
-   : Setting_description("Port number of the server")
-   : Setting_type('int')
-{
-   my $self = shift;
-   my ( $newvalue ) = @_;
-
-   $self->{port} = $newvalue if defined $newvalue;
-   return $self->{port};
-}
-
-sub setting_echo
-   : Setting_description("Local line echo")
-   : Setting_type('bool')
-{
-   my $self = shift;
-   my ( $newvalue ) = @_;
-
-   $self->{echo} = $newvalue if defined $newvalue;
-   return $self->{echo};
-}
-
-sub load_configuration
-{
-   my $self = shift;
-   my ( $ynode ) = @_;
-
-   $self->load_settings( $ynode );
-
-   $self->load_rules_configuration( $ynode );
-}
-
-sub store_configuration
-{
-   my $self = shift;
-   my ( $ynode ) = @_;
-
-   $self->store_settings( $ynode );
-
-   $self->store_rules_configuration( $ynode );
-}
+__PACKAGE__->APPLY_Setting( echo =>
+   description => "Local line echo",
+   type        => 'bool',
+);
 
 ###
 # Widgets

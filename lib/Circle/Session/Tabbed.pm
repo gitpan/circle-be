@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Session::Tabbed;
 
@@ -194,7 +194,7 @@ sub store_configuration
       my @components;
       while( $item ) {
          unshift @components, $item->enumerable_name;
-         $item = $item->enumerable_parent;
+         $item = $item->parent;
       }
       join "/", @components;
    } $self->items ];

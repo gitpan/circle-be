@@ -1,25 +1,14 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Command;
 
 use strict;
 use warnings;
 
-use Attribute::Storage qw( get_subattrs get_subattr );
-
-sub _walk_isa
-{
-   my ( $class, $code ) = @_;
-
-   $code->( $class );
-
-   no strict 'refs';
-   foreach my $isa ( @{ $class . "::ISA" } ) {
-      _walk_isa( $isa, $code );
-   }
-}
+use Attribute::Storage qw( get_subattrs get_subattr find_subs_with_attr );
+require mro;
 
 sub _find_commands
 {
@@ -29,34 +18,30 @@ sub _find_commands
    my %commands;
 
    while( $obj ) {
-      _walk_isa( ref $obj, sub {
-         my ( $class ) = @_;
-         no strict 'refs';
-         foreach my $name ( keys %{$class."::"} ) {
-            ( my $commandname = $name ) =~ s/^command_// or next;
+      my %subs = find_subs_with_attr( mro::get_linear_isa( ref $obj ), "Command_description",
+         matching => qr/^command_/,
+      );
 
-            # Don't capture base methods which are overridden
-            exists $commands{$commandname} and next;
+      foreach my $name ( keys %subs ) {
+         ( my $commandname = $name ) =~ s/^command_//;
+         my $cv = $subs{$name};
 
-            # Perl seems to cache methods in derived class symbol tables.
-            # Skip the caches
-            my $cv = $class->can( $name ) or next;
+         next if $commands{$commandname};
 
-            my $subof = get_subattr( $cv, "Command_subof" );
-            next if  $containedby and !$subof or
-                    !$containedby and  $subof or
-                     $containedby and $subof and $containedby ne $subof;
+         my $subof = get_subattr( $cv, "Command_subof" );
+         next if  $containedby and !$subof or
+                 !$containedby and  $subof or
+                  $containedby and $subof and $containedby ne $subof;
 
-            my $attrs = get_subattrs( $cv );
+         my $attrs = get_subattrs( $cv );
 
-            $commands{$commandname} = 1;
-            push @ret, __PACKAGE__->new( %$attrs,
-               name => $commandname,
-               obj  => $obj,
-               cv   => $cv,
-            );
-         }
-      } );
+         $commands{$commandname} = 1;
+         push @ret, __PACKAGE__->new( %$attrs,
+            name => $commandname,
+            obj  => $obj,
+            cv   => $cv,
+         );
+      }
 
       # Collect in parent too
       $obj = $obj->can( "commandable_parent" ) && $obj->commandable_parent( $cinv );

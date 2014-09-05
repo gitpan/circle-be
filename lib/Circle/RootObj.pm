@@ -1,12 +1,14 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2012 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::RootObj;
 
 use strict;
 use warnings;
-use base qw( Tangence::Object Circle::WindowItem Circle::Configurable );
+use base qw( Tangence::Object Circle::WindowItem );
+
+use Class::Method::Modifiers;
 
 use Carp;
 use YAML (); # 'Dump' and 'Load' are a bit generic; we'll call by FQN
@@ -18,7 +20,8 @@ use Circle::CommandInvocation;
 
 use Module::Pluggable sub_name    => "net_types",
                       search_path => [ "Circle::Net" ],
-                      only        => qr/^Circle::Net::\w+$/; # Not inner ones
+                      only        => qr/^Circle::Net::\w+$/, # Not inner ones
+                      force_search_all_paths => 1;
 
 {
    foreach my $class ( net_types ) {
@@ -74,6 +77,12 @@ sub add_network
    my ( $class, $name ) = @_;
 
    my $loop = $self->{loop};
+
+   # Late-loading to support out-of-tree classes so they don't have to declare
+   #   in the .tan file
+   eval { Tangence::Class->for_perlname( $class ) } or
+      eval { $class->DECLARE_TANGENCE } or
+      croak "Unknown Tangence::Class for '$class' and can't lazy-load it";
 
    my $registry = $self->{registry};
    my $newnet = $registry->construct(
@@ -141,12 +150,24 @@ use Circle::Collection
 
          $self->del_network( $network );
       },
-
    },
    attrs => [
       name => {},
       type => { nomod => 1, default => "irc" },
    ],
+   config => {
+      type => "hash",
+      load => sub {
+         my $self = shift;
+         my ( $name, $ynode ) = @_;
+         $self->get_prop_networks->{$name}->load_configuration( $ynode );
+      },
+      store => sub {
+         my $self = shift;
+         my ( $name, $ynode ) = @_;
+         $self->get_prop_networks->{$name}->store_configuration( $ynode );
+      },
+   },
    ;
 
 our %sessions;
@@ -239,7 +260,8 @@ use Circle::Collection
    commands => {
       # Disable add modify del
       add => undef, mod => undef, del => undef,
-   }
+   },
+   config => 0,
    ;
 
 sub command_session
@@ -436,7 +458,7 @@ sub enumerable_name
    return "";
 }
 
-sub enumerable_parent
+sub parent
 {
    return undef;
 }
@@ -537,26 +559,9 @@ sub command_config_reload
 }
 
 # For Configurable role
-sub load_configuration
-{
+after load_configuration => sub {
    my $self = shift;
    my ( $ynode ) = @_;
-
-   if( my $networks_ynode = $ynode->{networks} ) {
-      foreach my $netname ( keys %$networks_ynode ) {
-         my $netnode = $networks_ynode->{$netname};
-         my $type = $netnode->{type};
-         my $class = _nettype2class( $type );
-
-         if( !defined $class ) {
-            print STDERR "Cannot load network '$netname' - unrecognised type $type\n";
-            next;
-         }
-
-         my $net = $self->add_network( $class, $netname );
-         $net->load_configuration( $netnode );
-      }
-   }
 
    if( my $sessions_ynode = $ynode->{sessions} ) {
       foreach my $sessionname ( keys %$sessions_ynode ) {
@@ -567,29 +572,11 @@ sub load_configuration
          $session->load_configuration( $sessionnode );
       }
    }
-}
+};
 
-sub store_configuration
-{
+after store_configuration => sub {
    my $self = shift;
    my ( $ynode ) = @_;
-
-   my $networks_ynode = $ynode->{networks} ||= YAML::Node->new({});
-   %$networks_ynode = ();
-
-   my $networks = $self->get_prop_networks;
-   foreach my $netname ( sort keys %$networks ) {
-      my $net = $networks->{$netname};
-
-      my $netnode = $net->get_configuration;
-      $networks_ynode->{$netname} = $netnode;
-
-      unless( $netnode->{type} ) { # exists doesn't quite play ball
-         # Ensure it's first
-         unshift @{ tied(%$netnode)->keys }, 'type'; # I am going to hell for this
-         $netnode->{type} = (ref $net)->NETTYPE;
-      }
-   }
 
    my $sessions_ynode = $ynode->{sessions} ||= YAML::Node->new({});
    %$sessions_ynode = ();
@@ -606,6 +593,6 @@ sub store_configuration
          ( $sessionnode->{type} ) = (ref $session) =~ m/^Circle::Session::(.*)$/;
       }
    }
-}
+};
 
 0x55AA;

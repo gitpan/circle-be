@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2010 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle::Widget::Scroller;
 
@@ -24,7 +24,7 @@ sub new
 sub push_event
 {
    my $self = shift;
-   my ( $event, $args )=  @_;
+   my ( $event, $time, $args ) = @_;
 
    my $eventqueue = $self->get_prop_displayevents;
 
@@ -32,7 +32,7 @@ sub push_event
 
    $self->shift_prop_displayevents( $overcount ) if $overcount > 0;
 
-   $self->push_prop_displayevents( [ $event, time(), $args ] );
+   $self->push_prop_displayevents( [ $event, $time, $args ] );
 }
 
 0x55AA;

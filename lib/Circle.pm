@@ -1,6 +1,6 @@
 #  You may distribute under the terms of the GNU General Public License
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Circle;
 
@@ -8,12 +8,13 @@ use strict;
 use warnings;
 use base qw( Net::Async::Tangence::Server );
 IO::Async::Notifier->VERSION( '0.43' ); # ->loop
+Net::Async::Tangence::Server->VERSION( '0.12' ); # subclass of IaListener
 
-our $VERSION = '0.140500';
+our $VERSION = '0.142470';
 
 use Carp;
 
-use Tangence::Registry;
+use Tangence::Registry 0.20; # Support for late-loading classes
 use Circle::RootObj;
 
 use File::ShareDir qw( module_file );
@@ -62,8 +63,12 @@ sub make_local_client
 
    my ( $S1, $S2 ) = IO::Async::OS->socketpair or die "Cannot socketpair - $!";
 
-   require IO::Async::Stream;
-   $self->on_stream( IO::Async::Stream->new( handle => $S1 ) );
+   # Internal hackery; stolen from IaListener
+   my $acceptor = $self->acceptor;
+   my $handle = $self->{new_handle}->( $self );
+   $S1->blocking( 0 );
+   $handle->set_handle( $S1 );
+   $self->on_accept( $handle );
 
    require Net::Async::Tangence::Client;
    my $client = Net::Async::Tangence::Client->new(

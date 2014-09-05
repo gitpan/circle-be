@@ -4,7 +4,7 @@
       "Paul Evans <leonerd@leonerd.org.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.4203",
+   "generated_by" : "Module::Build version 0.4206",
    "license" : [
       "perl_5"
    ],
@@ -22,16 +22,22 @@
       },
       "runtime" : {
          "requires" : {
-            "Attribute::Storage" : "0.05",
+            "Attribute::Storage" : "0.09",
+            "Class::Method::Modifiers" : "0",
             "Data::Dump" : "0",
+            "File::Basename" : "0",
+            "File::Path" : "0",
             "File::ShareDir" : "1.00",
             "IO::Async::Loop" : "0.37",
             "IO::Async::Notifier" : "0.43",
+            "Module::Pluggable" : "4.1",
             "Net::Async::IRC" : "0.09",
-            "Net::Async::Tangence::Server" : "0",
+            "Net::Async::Tangence::Server" : "0.12",
             "String::Tagged" : "0",
+            "Struct::Dumb" : "0",
             "Tangence::Message" : "0.11",
             "Tangence::Object" : "0.18",
+            "Tangence::Registry" : "0.20",
             "YAML" : "0",
             "perl" : "5.010"
          }
@@ -40,7 +46,7 @@
    "provides" : {
       "Circle" : {
          "file" : "lib/Circle.pm",
-         "version" : "0.140500"
+         "version" : "0.142470"
       },
       "Circle::Collection" : {
          "file" : "lib/Circle/Collection.pm"
@@ -59,6 +65,9 @@
       },
       "Circle::GlobalRules" : {
          "file" : "lib/Circle/GlobalRules.pm"
+      },
+      "Circle::Loggable" : {
+         "file" : "lib/Circle/Loggable.pm"
       },
       "Circle::Net::IRC" : {
          "file" : "lib/Circle/Net/IRC.pm"
@@ -124,5 +133,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "0.140500"
+   "version" : "0.142470"
 }
